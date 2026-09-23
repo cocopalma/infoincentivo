@@ -164,4 +164,19 @@ abrir=function(k){if(!ONLINE){abrirLocal(k);return;}
 if('serviceWorker' in navigator && location.protocol === 'https:'){
   navigator.serviceWorker.register('sw.js').catch(function(){});
 }
+
+/* refresh online das fichas mostradas por pesquisa directa */
+var REFRESCADOS={};
+var fichaLocal=ficha;
+ficha=function(k){agendarRefresh(k);return fichaLocal(k);};
+function agendarRefresh(k){
+ if(!ONLINE)return;
+ var agora=Date.now();
+ if(REFRESCADOS[k]&&agora-REFRESCADOS[k]<60000)return;
+ REFRESCADOS[k]=agora;
+ var ref=P[k].campos[0].ref;
+ jsonp({pr:ref,posto:postoGet(true)},function(d){
+   if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);render();}
+ },function(){});
+}
 </script></body></html>
