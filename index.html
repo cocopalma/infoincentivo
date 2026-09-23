@@ -137,11 +137,11 @@ function postoGet(pedir){var p=null;try{p=localStorage.getItem('ii_posto')}catch
   try{localStorage.setItem('ii_posto',p)}catch(e){}}
  return p||'nao_identificado';}
 function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var s=document.createElement('script');
- var timer=setTimeout(function(){limpar();falhou&&falhou()},8000);
- function limpar(){clearTimeout(timer);try{delete window[nome]}catch(e){}try{s.remove()}catch(e){}}
- window[nome]=function(d){limpar();cb(d)};params.callback=nome;
+ var tarde=false;
+ var timer=setTimeout(function(){tarde=true;falhou&&falhou()},20000);
+ window[nome]=function(d){clearTimeout(timer);try{delete window[nome]}catch(e){}try{s.remove()}catch(e){}cb(d)};params.callback=nome;
  var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
- s.src=URL_SERVICO+'?'+qs;s.onerror=function(){limpar();falhou&&falhou()};document.body.appendChild(s);}
+ s.src=URL_SERVICO+'?'+qs;s.onerror=function(){clearTimeout(timer);falhou&&falhou()};document.body.appendChild(s);}
 function setOn(on,quando){ONLINE=on;
  chip.style.background=on?'#c9f2d5':'#ffe2b8';chip.style.color=on?'#0f5c2a':'#7a4a00';
  chip.textContent=on?('\u25CF ONLINE \u2014 dados de '+(quando||'')):'\u25CF OFFLINE \u2014 dados de 23/09/2026';}
