@@ -132,11 +132,39 @@ var URL_SERVICO='https://script.google.com/macros/s/AKfycbysE2NUoGxL4hMDFxNO0Jtt
 var chip=document.createElement('div');
 chip.style.cssText='position:fixed;top:8px;right:10px;z-index:99;font:12px/1.4 sans-serif;padding:3px 10px;border-radius:12px;font-weight:700;background:#ffe2b8;color:#7a4a00;box-shadow:0 1px 3px rgba(0,0,0,.2)';
 chip.textContent='\u25CF OFFLINE \u2014 dados de 04/10/2026';document.body.appendChild(chip);
-function postoGet(pedir){var p=null;try{p=localStorage.getItem('ii_utilizador')}catch(e){}
- if(!p&&pedir){var ant='';try{ant=localStorage.getItem('ii_posto')||''}catch(e){}
-  p=(prompt('Nome de quem usa este telem\u00F3vel e fun\u00E7\u00E3o (ex.: Mussa Saide \u2014 Engajamento):',ant)||'sem_nome').substring(0,60);
-  try{localStorage.setItem('ii_utilizador',p)}catch(e){}}
- return p||'nao_identificado';}
+/* ===== identificação por código pessoal (v10) ===== */
+function codGet(){try{return localStorage.getItem('ii_cod')||''}catch(e){return ''}}
+function nomeGet(){try{return localStorage.getItem('ii_nome')||''}catch(e){return ''}}
+var etiq=document.createElement('div');
+etiq.style.cssText='position:fixed;bottom:6px;left:8px;z-index:99;font:11px/1.3 sans-serif;color:#555;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:10px';
+document.body.appendChild(etiq);
+function mostrarEtiq(){var n=nomeGet();etiq.textContent=n?('Utilizador: '+n):'';etiq.style.display=n?'block':'none';}
+var porta=document.createElement('div');
+porta.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:#f4f7f4;display:none;align-items:center;justify-content:center;font-family:sans-serif';
+porta.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:22px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);text-align:center">'
+ +'<div style="font-size:20px;font-weight:700;color:#1a7a3a;margin-bottom:6px">InfoIncentivo</div>'
+ +'<div style="font-size:14px;color:#333;margin-bottom:14px">Escreva o seu código de acesso.<br><span style="font-size:12px;color:#777">(O código é pessoal e é dado pelo Etevaldo.)</span></div>'
+ +'<input id="ii_cod_in" type="password" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:22px;letter-spacing:4px;text-align:center;padding:10px;border:1px solid #bbb;border-radius:8px">'
+ +'<button id="ii_cod_bt" style="margin-top:12px;width:100%;font-size:16px;padding:10px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">Entrar</button>'
+ +'<div id="ii_cod_msg" style="margin-top:10px;font-size:13px;color:#b00020;min-height:18px"></div></div>';
+document.body.appendChild(porta);
+function abrirPorta(msg){porta.style.display='flex';document.getElementById('ii_cod_msg').textContent=msg||'';
+ var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
+function fecharPorta(){porta.style.display='none';}
+function limparCodigo(){try{localStorage.removeItem('ii_cod');localStorage.removeItem('ii_nome')}catch(e){}mostrarEtiq();}
+function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();var m=document.getElementById('ii_cod_msg');
+ if(!c){m.textContent='Escreva o código.';return;}
+ m.style.color='#555';m.textContent='A verificar…';
+ jsonp({login:c},function(d){
+   if(d&&d.ok){try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome)}catch(e){}
+     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();}
+   else{m.style.color='#b00020';m.textContent='Código inválido.';}
+ },function(){m.style.color='#b00020';m.textContent='Sem internet. Para entrar pela primeira vez é preciso internet.';});}
+document.getElementById('ii_cod_bt').addEventListener('click',tentarEntrar);
+document.getElementById('ii_cod_in').addEventListener('keydown',function(e){if(e.key==='Enter')tentarEntrar();});
+try{localStorage.removeItem('ii_utilizador');localStorage.removeItem('ii_posto')}catch(e){}
+mostrarEtiq();if(!codGet())abrirPorta();
+function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o Etevaldo.');return true;}return false;}
 function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var s=document.createElement('script');
  var tarde=false;
  var timer=setTimeout(function(){tarde=true;falhou&&falhou()},20000);
@@ -146,7 +174,7 @@ function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var
 function setOn(on,quando){ONLINE=on;
  chip.style.background=on?'#c9f2d5':'#ffe2b8';chip.style.color=on?'#0f5c2a':'#7a4a00';
  chip.textContent=on?('\u25CF ONLINE \u2014 dados de '+(quando||'')):'\u25CF OFFLINE \u2014 dados de 04/10/2026';}
-function pingar(){jsonp({posto:postoGet(false)},function(d){setOn(true,d.actualizado);filaEnviar()},function(){setOn(false)});}
+function pingar(){jsonp({cod:codGet()},function(d){setOn(true,d.actualizado);if(codGet()&&d.codigo_valido===false){codigoRecusado({erro:'codigo'});return;}filaEnviar()},function(){setOn(false)});}
 pingar();setInterval(pingar,60000);
 function dISO(v){if(typeof v=='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v)){var p=v.substring(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0]}return v||null}
 function mapear(r){return {ref:String(r.ref),nome:String(r.nome),com:r.com||'',ano:String(r.ano||''),
@@ -156,7 +184,9 @@ function mapear(r){return {ref:String(r.ref),nome:String(r.nome),com:r.com||'',a
 var abrirLocal=abrir;
 abrir=function(k){var ref=P[k].campos[0].ref;
  if(!ONLINE){filaPor({acao:'abriu',termo:ref});abrirLocal(k);return;}
- jsonp({pr:ref,acao:'abriu',posto:postoGet(true)},function(d){
+ if(!codGet()){abrirPorta();return;}
+ jsonp({pr:ref,acao:'abriu',cod:codGet()},function(d){
+   if(codigoRecusado(d))return;
    if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);}
    abrirLocal(k);},
   function(){setOn(false);abrirLocal(k);});};
@@ -171,12 +201,13 @@ var REFRESCADOS={};
 var fichaLocal=ficha;
 ficha=function(k){agendarRefresh(k);return fichaLocal(k);};
 function agendarRefresh(k){
- if(!ONLINE)return;
+ if(!ONLINE||!codGet())return;
  var agora=Date.now();
  if(REFRESCADOS[k]&&agora-REFRESCADOS[k]<60000)return;
  REFRESCADOS[k]=agora;
  var ref=P[k].campos[0].ref;
- jsonp({pr:ref,acao:'viu',posto:postoGet(true)},function(d){
+ jsonp({pr:ref,acao:'viu',cod:codGet()},function(d){
+   if(codigoRecusado(d))return;
    if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);render();}
  },function(){});
 }
@@ -184,10 +215,11 @@ function agendarRefresh(k){
 /* ===== registo de consultas (v8.1): quem consultou e o quê ===== */
 function filaPor(o){try{var f=JSON.parse(localStorage.getItem('ii_fila')||'[]');o.quando=new Date().toISOString();f.push(o);if(f.length>500)f=f.slice(-500);localStorage.setItem('ii_fila',JSON.stringify(f))}catch(e){}}
 function filaEnviar(){var f=[];try{f=JSON.parse(localStorage.getItem('ii_fila')||'[]')}catch(e){}
- if(!f.length)return;try{localStorage.setItem('ii_fila','[]')}catch(e){}
- f.forEach(function(o){jsonp({log:1,acao:o.acao,termo:o.termo,quando:o.quando,posto:postoGet(true)},function(){},function(){filaPor(o)})});}
+ if(!f.length||!codGet())return;try{localStorage.setItem('ii_fila','[]')}catch(e){}
+ f.forEach(function(o){jsonp({log:1,acao:o.acao,termo:o.termo,quando:o.quando,cod:codGet()},function(d){codigoRecusado(d)},function(){filaRepor(o)})});}
+function filaRepor(o){try{var f=JSON.parse(localStorage.getItem('ii_fila')||'[]');f.push(o);localStorage.setItem('ii_fila',JSON.stringify(f))}catch(e){}}
 var _tPesq=null;
 q.addEventListener('input',function(){clearTimeout(_tPesq);var v=q.value.trim();if(v.length<3)return;
- _tPesq=setTimeout(function(){if(ONLINE)jsonp({log:1,acao:'pesquisa',termo:v,posto:postoGet(true)},function(){},function(){filaPor({acao:'pesquisa',termo:v})});
+ _tPesq=setTimeout(function(){if(ONLINE&&codGet())jsonp({log:1,acao:'pesquisa',termo:v,cod:codGet()},function(d){codigoRecusado(d)},function(){filaPor({acao:'pesquisa',termo:v})});
   else filaPor({acao:'pesquisa',termo:v});},2500);});
 </script></body></html>
