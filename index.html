@@ -185,28 +185,49 @@ var porta=document.createElement('div');
 porta.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:#f4f7f4;display:none;align-items:center;justify-content:center;font-family:sans-serif';
 porta.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:22px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);text-align:center">'
  +'<div style="font-size:20px;font-weight:700;color:#1a7a3a;margin-bottom:6px">InfoIncentivo</div>'
- +'<div style="font-size:14px;color:#333;margin-bottom:14px">Escreva o seu código de acesso.<br><span style="font-size:12px;color:#777">(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)</span></div>'
+ +'<div id="ii_cod_txt" style="font-size:14px;color:#333;margin-bottom:14px"></div>'
  +'<input id="ii_cod_in" type="password" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:22px;letter-spacing:4px;text-align:center;padding:10px;border:1px solid #bbb;border-radius:8px">'
  +'<button id="ii_cod_bt" style="margin-top:12px;width:100%;font-size:16px;padding:10px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">Entrar</button>'
- +'<div id="ii_cod_msg" style="margin-top:10px;font-size:13px;color:#b00020;min-height:18px"></div></div>';
+ +'<div id="ii_cod_msg" style="margin-top:10px;font-size:13px;color:#b00020;min-height:18px"></div>'
+ +'<a id="ii_cod_outro" href="#" style="display:none;margin-top:6px;font-size:12px;color:#1a7a3a">Não é esta pessoa? Entrar com outro código</a></div>';
 document.body.appendChild(porta);
-function abrirPorta(msg){porta.style.display='flex';document.getElementById('ii_cod_msg').textContent=msg||'';
+var TXT_ENTRAR='Escreva o seu código de acesso.<br><span style="font-size:12px;color:#777">(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)</span>';
+var BLOQUEADO=false;
+function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex';document.getElementById('ii_cod_msg').style.color='#b00020';document.getElementById('ii_cod_msg').textContent=msg||'';
+ var t=document.getElementById('ii_cod_txt');
+ if(bloqueio){var n=nomeGet().split(' — ')[0];t.innerHTML='';var b=document.createElement('b');b.textContent='Sessão bloqueada por inactividade.';t.appendChild(b);
+   t.appendChild(document.createElement('br'));t.appendChild(document.createTextNode((n?n+', e':'E')+'screva o seu código para continuar.'));}
+ else t.innerHTML=TXT_ENTRAR;
+ document.getElementById('ii_cod_outro').style.display=bloqueio?'inline-block':'none';
  var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
-function fecharPorta(){porta.style.display='none';}
+function fecharPorta(){porta.style.display='none';BLOQUEADO=false;marcarActividade(true);}
 function limparCodigo(){try{localStorage.removeItem('ii_cod');localStorage.removeItem('ii_nome')}catch(e){}mostrarEtiq();}
 function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();var m=document.getElementById('ii_cod_msg');
  if(!c){m.textContent='Escreva o código.';return;}
+ var eraBloqueio=BLOQUEADO;
+ if(eraBloqueio&&c===codGet()){m.textContent='';fecharPorta();return;}
  m.style.color='#555';m.textContent='A verificar…';
  function ok(d){
    if(d&&d.ok){try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome)}catch(e){}
-     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();abrirMudar(true);}
+     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();if(!eraBloqueio)abrirMudar(true);}
    else{m.style.color='#b00020';m.textContent='Código inválido.';}}
  jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){m.style.color='#b00020';
    m.textContent=navigator.onLine===false?'Sem internet. Para entrar pela primeira vez é preciso internet.':'Não foi possível verificar o código agora. Tente de novo dentro de alguns segundos.';});},1500);});}
 document.getElementById('ii_cod_bt').addEventListener('click',tentarEntrar);
 document.getElementById('ii_cod_in').addEventListener('keydown',function(e){if(e.key==='Enter')tentarEntrar();});
 try{localStorage.removeItem('ii_utilizador');localStorage.removeItem('ii_posto')}catch(e){}
-mostrarEtiq();if(!codGet())abrirPorta();
+document.getElementById('ii_cod_outro').addEventListener('click',function(e){e.preventDefault();limparCodigo();abrirPorta('');});
+/* bloqueio por inactividade */
+var BLOQ_MIN=10;
+function ultimaAct(){try{return Number(localStorage.getItem('ii_ult')||0)}catch(e){return 0}}
+var _ultGrav=0;
+function marcarActividade(forcar){if(BLOQUEADO||porta.style.display==='flex')return;var a=Date.now();if(!forcar&&a-_ultGrav<15000)return;_ultGrav=a;try{localStorage.setItem('ii_ult',String(a))}catch(e){}}
+function verBloqueio(){if(!codGet()||BLOQUEADO||porta.style.display==='flex')return;
+ if(Date.now()-ultimaAct()>BLOQ_MIN*60000){try{caixaM.style.display='none'}catch(e){}abrirPorta('',true);}}
+['click','keydown','touchstart','scroll','input'].forEach(function(ev){document.addEventListener(ev,function(){marcarActividade(false)},{passive:true,capture:true});});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)verBloqueio();});
+setInterval(verBloqueio,30000);
+mostrarEtiq();if(!codGet())abrirPorta();else verBloqueio();
 function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o gestor da plataforma.');return true;}return false;}
 function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var s=document.createElement('script');
  var tarde=false;
