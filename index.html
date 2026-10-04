@@ -141,20 +141,26 @@ document.body.appendChild(etiq);
 function mostrarEtiq(){var n=nomeGet();etiq.innerHTML='';etiq.style.display=n?'block':'none';if(!n)return;
  var sp=document.createElement('span');sp.textContent='Utilizador: '+n+' · ';etiq.appendChild(sp);
  var a=document.createElement('a');a.href='#';a.textContent='Mudar o meu código';a.style.color='#1a7a3a';
- a.addEventListener('click',function(e){e.preventDefault();abrirMudar();});etiq.appendChild(a);}
+ a.addEventListener('click',function(e){e.preventDefault();abrirMudar(false);});etiq.appendChild(a);}
 var caixaM=document.createElement('div');
 caixaM.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:210;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
 function campoM(id,rot){return '<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+rot+'</div><input id="'+id+'" type="password" inputmode="numeric" maxlength="6" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #bbb;border-radius:8px">';}
 caixaM.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);text-align:center">'
- +'<div style="font-size:18px;font-weight:700;color:#1a7a3a">Mudar o meu código</div>'
+ +'<div id="ii_m_tit" style="font-size:18px;font-weight:700;color:#1a7a3a">Mudar o meu código</div>'
+ +'<div id="ii_m_int" style="display:none;font-size:13px;color:#333;margin-top:6px">Se quiser, escolha agora o seu próprio código. Também o pode mudar mais tarde em «Mudar o meu código», no fundo do ecrã.</div>'
  +'<div style="font-size:12px;color:#777;margin-top:4px">6 algarismos. Não use repetições (111111), sequências (123456), datas de nascimento nem partes do seu telefone.</div>'
  +campoM('ii_m_act','Código actual')+campoM('ii_m_n1','Código novo')+campoM('ii_m_n2','Repita o código novo')
  +'<div style="display:flex;gap:8px;margin-top:14px"><button id="ii_m_can" style="flex:1;font-size:15px;padding:9px;border:1px solid #bbb;border-radius:8px;background:#fff">Cancelar</button>'
  +'<button id="ii_m_ok" style="flex:1;font-size:15px;padding:9px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">Guardar</button></div>'
  +'<div id="ii_m_msg" style="margin-top:10px;font-size:13px;min-height:18px"></div></div>';
 document.body.appendChild(caixaM);
-function abrirMudar(){['ii_m_act','ii_m_n1','ii_m_n2'].forEach(function(i){document.getElementById(i).value=''});
- document.getElementById('ii_m_msg').textContent='';caixaM.style.display='flex';}
+function abrirMudar(primeira){['ii_m_act','ii_m_n1','ii_m_n2'].forEach(function(i){document.getElementById(i).value=''});
+ document.getElementById('ii_m_msg').textContent='';
+ document.getElementById('ii_m_tit').textContent=primeira?('Bem-vindo, '+nomeGet()):'Mudar o meu código';
+ document.getElementById('ii_m_int').style.display=primeira?'block':'none';
+ document.getElementById('ii_m_can').textContent=primeira?'Agora não':'Cancelar';
+ if(primeira)document.getElementById('ii_m_act').value=codGet();
+ caixaM.style.display='flex';}
 function msgM(t,erro){var m=document.getElementById('ii_m_msg');m.style.color=erro?'#b00020':'#0f5c2a';m.textContent=t;}
 document.getElementById('ii_m_can').addEventListener('click',function(){caixaM.style.display='none';});
 document.getElementById('ii_m_ok').addEventListener('click',function(){
@@ -163,7 +169,7 @@ document.getElementById('ii_m_ok').addEventListener('click',function(){
  if(!/^\d{6}$/.test(n1)){msgM('O código novo tem de ter 6 algarismos.',true);return;}
  if(n1!==n2){msgM('Os dois códigos novos não são iguais.',true);return;}
  msgM('A guardar…',false);
- jsonp({mudar:1,cod:a,novo:n1},function(d){
+ var trataM=function(d){
    if(d&&d.ok){try{localStorage.setItem('ii_cod',n1)}catch(e){}msgM('Código alterado. Use o novo a partir de agora.',false);
      setTimeout(function(){caixaM.style.display='none';},1800);return;}
    var e=d&&d.erro;
@@ -172,12 +178,14 @@ document.getElementById('ii_m_ok').addEventListener('click',function(){
         e==='usado'?'Esse código não está disponível. Escolha outro.':
         e==='igual'?'O código novo é igual ao actual.':
         e==='formato'?'O código novo tem de ter 6 algarismos.':'Não foi possível mudar o código. Tente de novo.',true);
- },function(){msgM('Sem internet. Para mudar o código é preciso internet.',true);});});
+ };
+ jsonp({mudar:1,cod:a,novo:n1},trataM,function(){setTimeout(function(){jsonp({mudar:1,cod:a,novo:n1},trataM,function(){
+   msgM(navigator.onLine===false?'Sem internet. Para mudar o código é preciso internet.':'Não foi possível guardar agora. Tente de novo dentro de alguns segundos.',true);});},1500);});});
 var porta=document.createElement('div');
 porta.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:#f4f7f4;display:none;align-items:center;justify-content:center;font-family:sans-serif';
 porta.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:22px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);text-align:center">'
  +'<div style="font-size:20px;font-weight:700;color:#1a7a3a;margin-bottom:6px">InfoIncentivo</div>'
- +'<div style="font-size:14px;color:#333;margin-bottom:14px">Escreva o seu código de acesso.<br><span style="font-size:12px;color:#777">(O código é pessoal e é dado pelo Etevaldo.)</span></div>'
+ +'<div style="font-size:14px;color:#333;margin-bottom:14px">Escreva o seu código de acesso.<br><span style="font-size:12px;color:#777">(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)</span></div>'
  +'<input id="ii_cod_in" type="password" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:22px;letter-spacing:4px;text-align:center;padding:10px;border:1px solid #bbb;border-radius:8px">'
  +'<button id="ii_cod_bt" style="margin-top:12px;width:100%;font-size:16px;padding:10px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">Entrar</button>'
  +'<div id="ii_cod_msg" style="margin-top:10px;font-size:13px;color:#b00020;min-height:18px"></div></div>';
@@ -189,20 +197,21 @@ function limparCodigo(){try{localStorage.removeItem('ii_cod');localStorage.remov
 function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();var m=document.getElementById('ii_cod_msg');
  if(!c){m.textContent='Escreva o código.';return;}
  m.style.color='#555';m.textContent='A verificar…';
- jsonp({login:c},function(d){
+ function ok(d){
    if(d&&d.ok){try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome)}catch(e){}
-     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();}
-   else{m.style.color='#b00020';m.textContent='Código inválido.';}
- },function(){m.style.color='#b00020';m.textContent='Sem internet. Para entrar pela primeira vez é preciso internet.';});}
+     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();abrirMudar(true);}
+   else{m.style.color='#b00020';m.textContent='Código inválido.';}}
+ jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){m.style.color='#b00020';
+   m.textContent=navigator.onLine===false?'Sem internet. Para entrar pela primeira vez é preciso internet.':'Não foi possível verificar o código agora. Tente de novo dentro de alguns segundos.';});},1500);});}
 document.getElementById('ii_cod_bt').addEventListener('click',tentarEntrar);
 document.getElementById('ii_cod_in').addEventListener('keydown',function(e){if(e.key==='Enter')tentarEntrar();});
 try{localStorage.removeItem('ii_utilizador');localStorage.removeItem('ii_posto')}catch(e){}
 mostrarEtiq();if(!codGet())abrirPorta();
-function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o Etevaldo.');return true;}return false;}
+function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o gestor da plataforma.');return true;}return false;}
 function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var s=document.createElement('script');
  var tarde=false;
  var timer=setTimeout(function(){tarde=true;falhou&&falhou()},20000);
- window[nome]=function(d){clearTimeout(timer);try{delete window[nome]}catch(e){}try{s.remove()}catch(e){}cb(d)};params.callback=nome;
+ window[nome]=function(d){clearTimeout(timer);try{delete window[nome]}catch(e){}try{s.remove()}catch(e){}cb(d)};params.callback=nome;params._t=Date.now();
  var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
  s.src=URL_SERVICO+'?'+qs;s.onerror=function(){clearTimeout(timer);falhou&&falhou()};document.body.appendChild(s);}
 function setOn(on,quando){ONLINE=on;
