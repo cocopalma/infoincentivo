@@ -282,7 +282,7 @@ mostrarEtiq();if(!codGet())abrirPorta();else verBloqueio();
 function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o gestor da plataforma.');return true;}return false;}
 function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var s=document.createElement('script');
  var tarde=false;
- var timer=setTimeout(function(){tarde=true;falhou&&falhou()},20000);
+ var timer=setTimeout(function(){tarde=true;falhou&&falhou()},40000);
  window[nome]=function(d){clearTimeout(timer);try{delete window[nome]}catch(e){}try{s.remove()}catch(e){}cb(d)};params.callback=nome;params._t=Date.now();
  var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
  s.src=URL_SERVICO+'?'+qs;s.onerror=function(){clearTimeout(timer);falhou&&falhou()};document.body.appendChild(s);}
