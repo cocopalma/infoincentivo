@@ -202,7 +202,7 @@ function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex
  document.getElementById('ii_cod_outro').style.display=bloqueio?'inline-block':'none';
  var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
 function fecharPorta(){porta.style.display='none';BLOQUEADO=false;marcarActividade(true);}
-function limparCodigo(){try{localStorage.removeItem('ii_cod');localStorage.removeItem('ii_nome')}catch(e){}mostrarEtiq();}
+function limparCodigo(){try{localStorage.removeItem('ii_cod');localStorage.removeItem('ii_nome');localStorage.removeItem('ii_mail')}catch(e){}mostrarEtiq();}
 /* tentativas erradas: 3 erros -> 5 min; mais 3 -> 30 min; no ecrã de bloqueio, 3 erros terminam a sessão */
 function errGet(){try{return JSON.parse(localStorage.getItem('ii_err')||'{}')}catch(e){return {}}}
 function errSet(o){try{localStorage.setItem('ii_err',JSON.stringify(o))}catch(e){}}
@@ -227,7 +227,7 @@ function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();
  if(eraBloqueio&&c===codGet()){errSet({});m.textContent='';fecharPorta();return;}
  m.style.color='#555';m.textContent='A verificar…';
  function ok(d){
-   if(d&&d.ok){errSet({});try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome)}catch(e){}
+   if(d&&d.ok){errSet({});try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome);localStorage.setItem('ii_mail',d.mail||'')}catch(e){}
      m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();enviarTerminoPendente();if(!eraBloqueio)abrirMudar(true);}
    else registarErro(eraBloqueio);}
  jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){
@@ -242,7 +242,8 @@ var caixaE=document.createElement('div');
 caixaE.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:220;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
 caixaE.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);text-align:center">'
  +'<div style="font-size:18px;font-weight:700;color:#1a7a3a">Esqueci o meu código</div>'
- +'<div style="font-size:13px;color:#333;margin-top:6px">Escreva o seu email. Se estiver registado, recebe lá um código novo em poucos minutos. Se não tiver email registado, escreva também o seu nome: o pedido segue para o gestor da plataforma.</div>'
+ +'<div style="font-size:13px;color:#333;margin-top:6px">Escreva o seu email. Se estiver registado, recebe lá um código novo em poucos minutos. Se não tiver email registado, escreva o seu nome: o pedido segue para o gestor da plataforma.</div>'
+ +'<div id="ii_e_reg" style="font-size:13px;color:#0f5c2a;margin-top:8px;font-weight:700"></div>'
  +'<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">Email</div><input id="ii_e_mail" type="email" autocomplete="email" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border:1px solid #bbb;border-radius:8px">'
  +'<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">Nome</div><input id="ii_e_nome" type="text" autocomplete="name" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border:1px solid #bbb;border-radius:8px">'
  +'<div style="display:flex;gap:8px;margin-top:14px"><button id="ii_e_can" style="flex:1;font-size:15px;padding:9px;border:1px solid #bbb;border-radius:8px;background:#fff">Fechar</button>'
@@ -252,6 +253,8 @@ document.body.appendChild(caixaE);
 function msgE(t,erro){var m=document.getElementById('ii_e_msg');m.style.color=erro?'#b00020':'#0f5c2a';m.textContent=t;}
 document.getElementById('ii_cod_esq').addEventListener('click',function(e){e.preventDefault();
  document.getElementById('ii_e_mail').value='';document.getElementById('ii_e_nome').value=(nomeGet()||'').split(' — ')[0];msgE('',false);
+ var mk='';try{mk=localStorage.getItem('ii_mail')||''}catch(x){}var nn=(nomeGet()||'').split(' — ')[0];
+ document.getElementById('ii_e_reg').textContent=nn?(mk?('Email registado para '+nn+': '+mk):('Não há email registado para '+nn+'. Escreva o seu nome e o pedido segue para o gestor da plataforma.')):'Use o email que deu ao gestor da plataforma.';
  document.getElementById('ii_e_ok').disabled=false;caixaE.style.display='flex';});
 document.getElementById('ii_e_can').addEventListener('click',function(){caixaE.style.display='none';});
 document.getElementById('ii_e_ok').addEventListener('click',function(){
@@ -286,7 +289,7 @@ function jsonp(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var
 function setOn(on,quando){ONLINE=on;
  chip.style.background=on?'#c9f2d5':'#ffe2b8';chip.style.color=on?'#0f5c2a':'#7a4a00';
  chip.textContent=on?('\u25CF ONLINE \u2014 dados de '+(quando||'')):'\u25CF OFFLINE \u2014 dados de 04/10/2026';}
-function pingar(){jsonp({cod:codGet()},function(d){setOn(true,d.actualizado);if(codGet()&&d.codigo_valido===false){codigoRecusado({erro:'codigo'});return;}filaEnviar()},function(){setOn(false)});}
+function pingar(){jsonp({cod:codGet()},function(d){setOn(true,d.actualizado);if(codGet()&&d.codigo_valido===false){codigoRecusado({erro:'codigo'});return;}if(codGet()&&d.codigo_valido===true&&d.mail!==undefined){try{localStorage.setItem('ii_mail',d.mail||'')}catch(e){}}filaEnviar()},function(){setOn(false)});}
 pingar();setInterval(pingar,60000);
 function dISO(v){if(typeof v=='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v)){var p=v.substring(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0]}return v||null}
 function mapear(r){return {ref:String(r.ref),nome:String(r.nome),com:r.com||'',ano:String(r.ano||''),
