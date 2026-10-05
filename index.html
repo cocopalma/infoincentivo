@@ -253,8 +253,8 @@ document.body.appendChild(caixaE);
 function msgE(t,erro){var m=document.getElementById('ii_e_msg');m.style.color=erro?'#b00020':'#0f5c2a';m.textContent=t;}
 document.getElementById('ii_cod_esq').addEventListener('click',function(e){e.preventDefault();
  document.getElementById('ii_e_mail').value='';document.getElementById('ii_e_nome').value=(nomeGet()||'').split(' — ')[0];msgE('',false);
- var mk='';try{mk=localStorage.getItem('ii_mail')||''}catch(x){}var nn=(nomeGet()||'').split(' — ')[0];
- document.getElementById('ii_e_reg').textContent=nn?(mk?('Email registado para '+nn+': '+mk):('Não há email registado para '+nn+'. Escreva o seu nome e o pedido segue para o gestor da plataforma.')):'Use o email que deu ao gestor da plataforma.';
+ var mk=null;try{mk=localStorage.getItem('ii_mail')}catch(x){}var nn=(nomeGet()||'').split(' — ')[0];
+ document.getElementById('ii_e_reg').textContent=(nn&&mk)?('Email registado para '+nn+': '+mk):((nn&&mk==='')?('Não há email registado para '+nn+'. Escreva o seu nome e o pedido segue para o gestor da plataforma.'):'Use o email que deu ao gestor da plataforma.');
  document.getElementById('ii_e_ok').disabled=false;caixaE.style.display='flex';});
 document.getElementById('ii_e_can').addEventListener('click',function(){caixaE.style.display='none';});
 document.getElementById('ii_e_ok').addEventListener('click',function(){
