@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
+<meta name="ii-versao" content="2026-10-05 14:30 | dados de 04/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -278,8 +279,26 @@ function verBloqueio(){if(!codGet()||BLOQUEADO||porta.style.display==='flex')ret
 ['click','keydown','touchstart','scroll','input'].forEach(function(ev){document.addEventListener(ev,function(){marcarActividade(false)},{passive:true,capture:true});});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)verBloqueio();});
 setInterval(verBloqueio,30000);
+/* aviso de versão nova: compara a versão desta página com a publicada no GitHub */
+var VERSAO_LOCAL=(document.querySelector('meta[name="ii-versao"]')||{}).content||'';
+var faixa=document.createElement('div');
+faixa.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:150;background:#1a7a3a;color:#fff;font:14px/1.4 sans-serif;padding:12px 14px;text-align:center;display:none;box-shadow:0 -2px 6px rgba(0,0,0,.2)';
+faixa.addEventListener('click',function(){try{if(codGet()&&!BLOQUEADO)sessionStorage.setItem('ii_actualizar',String(Date.now()))}catch(e){}location.reload();});
+document.body.appendChild(faixa);
+function verVersao(){if(!VERSAO_LOCAL||navigator.onLine===false||!window.fetch)return;
+ fetch('./index.html?versao='+Date.now(),{cache:'no-store',headers:{'Range':'bytes=0-1023'}}).then(function(r){return r.text()}).then(function(t){
+   var m=t.match(/name="ii-versao" content="([^"]+)"/);
+   if(m&&m[1]!==VERSAO_LOCAL){var dd=(m[1].split('|')[1]||'').trim();
+     faixa.innerHTML='';var b=document.createElement('b');b.textContent='Há dados novos no InfoIncentivo'+(dd?' ('+dd+')':'')+'.';faixa.appendChild(b);
+     faixa.appendChild(document.createElement('br'));faixa.appendChild(document.createTextNode('Toque aqui para actualizar.'));faixa.style.display='block';}
+ }).catch(function(){});}
+setTimeout(verVersao,15000);setInterval(verVersao,10*60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)verVersao();});
 /* ao abrir a aplicação pede sempre o código (desbloqueio no telemóvel, sem internet) */
-mostrarEtiq();if(!codGet())abrirPorta();else abrirPorta('','inicio');
+var _act=0;try{_act=Number(sessionStorage.getItem('ii_actualizar')||0);sessionStorage.removeItem('ii_actualizar')}catch(e){}
+mostrarEtiq();if(!codGet())abrirPorta();
+else if(_act&&Date.now()-_act<60000){marcarActividade(true);} /* actualização pedida pela faixa: não pede o código */
+else abrirPorta('','inicio');
 function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o gestor da plataforma.');return true;}return false;}
 /* um pedido de cada vez: o servidor responde mal a pedidos em simultâneo */
 var FILA_P=[],OCUPADO=false;

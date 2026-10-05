@@ -13,8 +13,10 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return; // JSONP do Apps Script segue direto à rede
   e.respondWith(
     fetch(e.request).then(r => {
-      const cl = r.clone();
-      caches.open(CACHE).then(c => c.put(e.request, cl));
+      if (r.status === 200 && !url.search.includes('versao=')) {
+        const cl = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, cl)).catch(() => {});
+      }
       return r;
     }).catch(() => caches.match(e.request, {ignoreSearch: true}).then(r => r || caches.match('./index.html')))
   );
