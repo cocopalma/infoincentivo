@@ -189,7 +189,8 @@ porta.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:2
  +'<input id="ii_cod_in" type="password" inputmode="numeric" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:22px;letter-spacing:4px;text-align:center;padding:10px;border:1px solid #bbb;border-radius:8px">'
  +'<button id="ii_cod_bt" style="margin-top:12px;width:100%;font-size:16px;padding:10px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">Entrar</button>'
  +'<div id="ii_cod_msg" style="margin-top:10px;font-size:13px;color:#b00020;min-height:18px"></div>'
- +'<a id="ii_cod_outro" href="#" style="display:none;margin-top:6px;font-size:12px;color:#1a7a3a">Não é esta pessoa? Entrar com outro código</a></div>';
+ +'<a id="ii_cod_esq" href="#" style="display:block;margin-top:6px;font-size:13px;color:#1a7a3a">Esqueci o meu código</a>'
+ +'<a id="ii_cod_outro" href="#" style="display:none;margin-top:8px;font-size:12px;color:#1a7a3a">Não é esta pessoa? Entrar com outro código</a></div>';
 document.body.appendChild(porta);
 var TXT_ENTRAR='Escreva o seu código de acesso.<br><span style="font-size:12px;color:#777">(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)</span>';
 var BLOQUEADO=false;
@@ -202,21 +203,68 @@ function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex
  var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
 function fecharPorta(){porta.style.display='none';BLOQUEADO=false;marcarActividade(true);}
 function limparCodigo(){try{localStorage.removeItem('ii_cod');localStorage.removeItem('ii_nome')}catch(e){}mostrarEtiq();}
+/* tentativas erradas: 3 erros -> 5 min; mais 3 -> 30 min; no ecrã de bloqueio, 3 erros terminam a sessão */
+function errGet(){try{return JSON.parse(localStorage.getItem('ii_err')||'{}')}catch(e){return {}}}
+function errSet(o){try{localStorage.setItem('ii_err',JSON.stringify(o))}catch(e){}}
+function hhmm(t){var d=new Date(t);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
+function esperaMsg(){var o=errGet();if(o.ate&&Date.now()<o.ate)return 'Demasiadas tentativas. Tente de novo às '+hhmm(o.ate)+'.'+((o.nivel||0)>=2?' Parece que não se lembra do código. Toque em «Esqueci o meu código» para pedir um novo.':'');return '';}
+function enviarTerminoPendente(){var t=null;try{t=JSON.parse(localStorage.getItem('ii_term_pend')||'null')}catch(e){}
+ if(!t||!codGet())return;
+ jsonp({log:1,acao:'sessão terminada por tentativas erradas',termo:'sessão de '+t.nome,quando:t.quando,cod:codGet()},function(){try{localStorage.removeItem('ii_term_pend')}catch(e){}},function(){});}
+function registarErro(eraBloqueio){var o=errGet();o.n=(o.n||0)+1;var m=document.getElementById('ii_cod_msg');m.style.color='#b00020';
+ if(eraBloqueio&&o.n>=3){
+   var nomeSess=nomeGet(),codSess=codGet(),quando=new Date().toISOString();
+   jsonp({log:1,acao:'sessão terminada por tentativas erradas',termo:'',quando:quando,cod:codSess},function(){},function(){
+     try{localStorage.setItem('ii_term_pend',JSON.stringify({nome:nomeSess,quando:quando}))}catch(e){}});
+   limparCodigo();o.n=0;o.nivel=1;o.ate=Date.now()+5*60000;errSet(o);
+   abrirPorta('Sessão terminada por tentativas erradas. Para entrar é preciso internet e o código certo. '+esperaMsg());return;}
+ if(o.n>=3){o.n=0;o.ate=Date.now()+((o.nivel||0)>=1?30:5)*60000;o.nivel=(o.nivel||0)+1;errSet(o);m.textContent=esperaMsg();return;}
+ errSet(o);m.textContent='Código inválido. '+(eraBloqueio?'Ao 3.º erro a sessão é terminada.':'Restam '+(3-o.n)+' tentativa(s).');}
 function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();var m=document.getElementById('ii_cod_msg');
- if(!c){m.textContent='Escreva o código.';return;}
+ var esp=esperaMsg();if(esp){m.style.color='#b00020';m.textContent=esp;return;}
+ if(!c){m.style.color='#b00020';m.textContent='Escreva o código.';return;}
  var eraBloqueio=BLOQUEADO;
- if(eraBloqueio&&c===codGet()){m.textContent='';fecharPorta();return;}
+ if(eraBloqueio&&c===codGet()){errSet({});m.textContent='';fecharPorta();return;}
  m.style.color='#555';m.textContent='A verificar…';
  function ok(d){
-   if(d&&d.ok){try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome)}catch(e){}
-     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();if(!eraBloqueio)abrirMudar(true);}
-   else{m.style.color='#b00020';m.textContent='Código inválido.';}}
- jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){m.style.color='#b00020';
+   if(d&&d.ok){errSet({});try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome)}catch(e){}
+     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();enviarTerminoPendente();if(!eraBloqueio)abrirMudar(true);}
+   else registarErro(eraBloqueio);}
+ jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){
+   if(eraBloqueio){registarErro(true);return;}
+   m.style.color='#b00020';
    m.textContent=navigator.onLine===false?'Sem internet. Para entrar pela primeira vez é preciso internet.':'Não foi possível verificar o código agora. Tente de novo dentro de alguns segundos.';});},1500);});}
 document.getElementById('ii_cod_bt').addEventListener('click',tentarEntrar);
 document.getElementById('ii_cod_in').addEventListener('keydown',function(e){if(e.key==='Enter')tentarEntrar();});
 try{localStorage.removeItem('ii_utilizador');localStorage.removeItem('ii_posto')}catch(e){}
 document.getElementById('ii_cod_outro').addEventListener('click',function(e){e.preventDefault();limparCodigo();abrirPorta('');});
+var caixaE=document.createElement('div');
+caixaE.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:220;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
+caixaE.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);text-align:center">'
+ +'<div style="font-size:18px;font-weight:700;color:#1a7a3a">Esqueci o meu código</div>'
+ +'<div style="font-size:13px;color:#333;margin-top:6px">Escreva o seu email. Se estiver registado, recebe lá um código novo em poucos minutos. Se não tiver email registado, escreva também o seu nome: o pedido segue para o gestor da plataforma.</div>'
+ +'<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">Email</div><input id="ii_e_mail" type="email" autocomplete="email" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border:1px solid #bbb;border-radius:8px">'
+ +'<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">Nome</div><input id="ii_e_nome" type="text" autocomplete="name" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border:1px solid #bbb;border-radius:8px">'
+ +'<div style="display:flex;gap:8px;margin-top:14px"><button id="ii_e_can" style="flex:1;font-size:15px;padding:9px;border:1px solid #bbb;border-radius:8px;background:#fff">Fechar</button>'
+ +'<button id="ii_e_ok" style="flex:1;font-size:15px;padding:9px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">Pedir código</button></div>'
+ +'<div id="ii_e_msg" style="margin-top:10px;font-size:13px;min-height:18px"></div></div>';
+document.body.appendChild(caixaE);
+function msgE(t,erro){var m=document.getElementById('ii_e_msg');m.style.color=erro?'#b00020':'#0f5c2a';m.textContent=t;}
+document.getElementById('ii_cod_esq').addEventListener('click',function(e){e.preventDefault();
+ document.getElementById('ii_e_mail').value='';document.getElementById('ii_e_nome').value=(nomeGet()||'').split(' — ')[0];msgE('',false);
+ document.getElementById('ii_e_ok').disabled=false;caixaE.style.display='flex';});
+document.getElementById('ii_e_can').addEventListener('click',function(){caixaE.style.display='none';});
+document.getElementById('ii_e_ok').addEventListener('click',function(){
+ var em=document.getElementById('ii_e_mail').value.trim(),nm=document.getElementById('ii_e_nome').value.trim();
+ if(!em&&!nm){msgE('Escreva o seu email ou o seu nome.',true);return;}
+ if(em&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msgE('O email não parece correcto.',true);return;}
+ var bt=document.getElementById('ii_e_ok');bt.disabled=true;msgE('A enviar…',false);
+ var trata=function(d){
+   if(d&&d.ok){var o=errGet();if(o.ate&&o.ate>Date.now()+5*60000){o.ate=Date.now()+5*60000;errSet(o);}
+     msgE('Pedido recebido. Se o seu email estiver registado, vai receber um código novo dentro de minutos. Caso contrário, o gestor da plataforma vai contactá-lo.',false);}
+   else{bt.disabled=false;msgE('Não foi possível enviar o pedido. Tente de novo.',true);}};
+ jsonp({esqueci:1,email:em,nome:nm},trata,function(){bt.disabled=false;
+   msgE(navigator.onLine===false?'Sem internet. Para pedir um código novo é preciso internet.':'Não foi possível confirmar o pedido. Verifique o seu email dentro de alguns minutos antes de pedir de novo.',true);});});
 /* bloqueio por inactividade */
 var BLOQ_MIN=10;
 function ultimaAct(){try{return Number(localStorage.getItem('ii_ult')||0)}catch(e){return 0}}
