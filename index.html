@@ -196,8 +196,8 @@ var TXT_ENTRAR='Escreva o seu código de acesso.<br><span style="font-size:12px;
 var BLOQUEADO=false;
 function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex';document.getElementById('ii_cod_msg').style.color='#b00020';document.getElementById('ii_cod_msg').textContent=msg||'';
  var t=document.getElementById('ii_cod_txt');
- if(bloqueio){var n=nomeGet().split(' — ')[0];t.innerHTML='';var b=document.createElement('b');b.textContent='Sessão bloqueada por inactividade.';t.appendChild(b);
-   t.appendChild(document.createElement('br'));t.appendChild(document.createTextNode((n?n+', e':'E')+'screva o seu código para continuar.'));}
+ if(bloqueio){var n=nomeGet().split(' — ')[0];t.innerHTML='';var b=document.createElement('b');b.textContent=(bloqueio==='inicio')?('Bem-vindo de volta'+(n?', '+n:'')+'.'):'Sessão bloqueada por inactividade.';t.appendChild(b);
+   t.appendChild(document.createElement('br'));t.appendChild(document.createTextNode(bloqueio==='inicio'?'Escreva o seu código para entrar.':((n?n+', e':'E')+'screva o seu código para continuar.')));}
  else t.innerHTML=TXT_ENTRAR;
  document.getElementById('ii_cod_outro').style.display=bloqueio?'inline-block':'none';
  var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
@@ -278,7 +278,8 @@ function verBloqueio(){if(!codGet()||BLOQUEADO||porta.style.display==='flex')ret
 ['click','keydown','touchstart','scroll','input'].forEach(function(ev){document.addEventListener(ev,function(){marcarActividade(false)},{passive:true,capture:true});});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)verBloqueio();});
 setInterval(verBloqueio,30000);
-mostrarEtiq();if(!codGet())abrirPorta();else verBloqueio();
+/* ao abrir a aplicação pede sempre o código (desbloqueio no telemóvel, sem internet) */
+mostrarEtiq();if(!codGet())abrirPorta();else abrirPorta('','inicio');
 function codigoRecusado(d){if(d&&d.erro==='codigo'){limparCodigo();abrirPorta('O seu código deixou de ser válido. Fale com o gestor da plataforma.');return true;}return false;}
 /* um pedido de cada vez: o servidor responde mal a pedidos em simultâneo */
 var FILA_P=[],OCUPADO=false;
