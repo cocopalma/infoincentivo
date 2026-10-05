@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-05 14:30 | dados de 04/10/2026">
+<meta name="ii-versao" content="2026-10-05 14:50 | dados de 04/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -265,8 +265,8 @@ document.getElementById('ii_e_ok').addEventListener('click',function(){
  var bt=document.getElementById('ii_e_ok');bt.disabled=true;msgE('A enviar…',false);
  var trata=function(d){
    if(d&&d.ok){var o=errGet();if(o.ate&&o.ate>Date.now()+5*60000){o.ate=Date.now()+5*60000;errSet(o);}
-     msgE('Pedido recebido. Se o seu email estiver registado, vai receber um código novo dentro de minutos. Caso contrário, o gestor da plataforma vai contactá-lo.',false);}
-   else{bt.disabled=false;msgE('Não foi possível enviar o pedido. Tente de novo.',true);}};
+     msgE('Pedido recebido. Se o seu email estiver registado, vai receber um código novo dentro de minutos (máximo de 3 pedidos por dia). Caso contrário, o gestor da plataforma vai contactá-lo.',false);}
+   else{bt.disabled=false;msgE('Não foi possível enviar o pedido. Tente de novo.'+(d&&d.erro?' ('+String(d.erro).substring(0,120)+')':''),true);}};
  jsonp({esqueci:1,email:em,nome:nm},trata,function(){bt.disabled=false;
    msgE(navigator.onLine===false?'Sem internet. Para pedir um código novo é preciso internet.':'Não foi possível confirmar o pedido. Verifique o seu email dentro de alguns minutos antes de pedir de novo.',true);});});
 /* bloqueio por inactividade */
