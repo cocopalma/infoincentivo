@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-07 20:00 | dados de 07/10/2026">
+<meta name="ii-versao" content="2026-10-07 20:15 | dados de 07/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -51,7 +51,7 @@ footer{text-align:center;font-size:11px;color:#999;padding:14px}
 <div style="flex:1"><h1 id="ttl">InfoIncentivo</h1>
 <div class="sub">Dados de 07/10/2026 · com internet mostra dados actuais · sem internet funciona na mesma</div></div></header>
 <div class="ctrl" id="ctrl">
-<input id="q" type="search" placeholder="Pesquisar nome, referência ou número de conta…">
+<input id="q" type="search" name="pesquisa" role="searchbox" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Pesquisar nome, referência ou número de conta…">
 <select id="com"><option value="">Todas as comunidades</option><option>Bagala</option><option>Farol</option><option>Farol </option><option>Incularino</option><option>Macala</option><option>Maganja</option><option>Manguna</option><option>Mondlane</option><option>Muah</option><option>Namanengo</option><option>Ncalanga</option><option>Ncumbi</option><option>Olumbe</option><option>Palma Sede</option><option>Patacua</option><option>Quelimane</option><option>Quilaua</option><option>Quionga</option><option>Quirinde</option><option>Quitunda</option><option>Quiwia</option><option>Senga</option><option>Senga RAL</option></select>
 </div>
 <div id="stats"></div><div id="out"></div>
@@ -146,7 +146,7 @@ function mostrarEtiq(){var n=nomeGet();etiq.innerHTML='';etiq.style.display=n?'b
  a.addEventListener('click',function(e){e.preventDefault();abrirMudar(false);});etiq.appendChild(a);}
 var caixaM=document.createElement('div');
 caixaM.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:210;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
-function campoM(id,rot){return '<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+rot+'</div><input id="'+id+'" type="password" inputmode="numeric" maxlength="6" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #bbb;border-radius:8px">';}
+function campoM(id,rot){return '<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+rot+'</div><input id="'+id+'" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="-webkit-text-security:disc;width:100%;box-sizing:border-box;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #bbb;border-radius:8px">';}
 caixaM.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);text-align:center">'
  +'<div id="ii_m_tit" style="font-size:18px;font-weight:700;color:#1a7a3a">Mudar o meu código</div>'
  +'<div id="ii_m_int" style="display:none;font-size:13px;color:#333;margin-top:6px">Se quiser, escolha agora o seu próprio código. Também o pode mudar mais tarde em «Mudar o meu código», no fundo do ecrã.</div>'
