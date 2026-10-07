@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-07 17:30 | dados de 07/10/2026">
+<meta name="ii-versao" content="2026-10-07 20:00 | dados de 07/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -320,17 +320,20 @@ pingar();setInterval(pingar,60000);
 function dISO(v){if(typeof v=='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v)){var p=v.substring(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0]}return v||null}
 function mapear(r){return {ref:String(r.ref),nome:String(r.nome),com:r.com||'',ano:String(r.ano||''),
  plantio:dISO(r.plantio)||'\u2014',mudas:(r.mudas===''?null:r.mudas),vivas:(r.vivas===''?null:r.vivas),
- ass:dISO(r.termo),conta:r.conta||'',tit:r.tit||'',tel:r.conta||'',hist:(r.hist||[]),totpago:r.totpago||0,atraso:r.atraso||0,
+ ass:dISO(r.termo),conta:String(r.conta||''),tit:r.tit||'',tel:String(r.tel||r.conta||''),hist:(r.hist||[]),totpago:r.totpago||0,atraso:r.atraso||0,
  ts:(r.ts||'\u2014'),estado:'',prox:r.prox||''};}
 var abrirLocal=abrir;
+/* abertura instantânea (07/10/2026): mostra já a ficha com os dados do telemóvel e actualiza-a quando chegar a resposta online */
 abrir=function(k){var ref=P[k].campos[0].ref;
  if(!ONLINE){filaPor({acao:'abriu',termo:ref});abrirLocal(k);return;}
  if(!codGet()){abrirPorta();return;}
+ REFRESCADOS[k]=Date.now();
+ abrirLocal(k);
  jsonp({pr:ref,acao:'abriu',cod:codGet()},function(d){
    if(codigoRecusado(d))return;
-   if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);}
-   abrirLocal(k);},
-  function(){setOn(false);abrirLocal(k);});};
+   if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);
+     if(back.style.display==='block'&&ttl.textContent===P[k].campos[0].nome){out.innerHTML=fichaLocal(k);}}},
+  function(){setOn(false);});};
 
 /* registo do service worker (PWA) */
 if('serviceWorker' in navigator && location.protocol === 'https:'){
