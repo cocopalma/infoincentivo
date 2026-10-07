@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-07 20:15 | dados de 07/10/2026">
+<meta name="ii-versao" content="2026-10-07 20:30 | dados de 07/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -128,6 +128,14 @@ function render(){back.style.display='none';ctrl.style.display='block';ttl.textC
  else{out.innerHTML=res.map(linhaProd).join('');}
  window.scrollTo(0,0);}
 function voltar(){render();}
+/* o navegador pode preencher a pesquisa com o email/código guardado (autofill): bloqueia até tocar no campo e limpa o que tiver «@» (07/10/2026) */
+q.setAttribute('readonly','readonly');
+function soltarQ(){if(q.hasAttribute('readonly')){q.removeAttribute('readonly');}}
+['focus','mousedown','touchstart','keydown'].forEach(function(ev){q.addEventListener(ev,soltarQ);});
+function limparAuto(){if(/@/.test(q.value)){q.value='';render();}}
+q.addEventListener('input',function(){if(/@/.test(q.value)){q.value='';}});
+[200,800,2000,4000].forEach(function(ms){setTimeout(limparAuto,ms);});
+window.addEventListener('pageshow',function(){setTimeout(limparAuto,100);});
 q.addEventListener('input',render);com.addEventListener('change',render);render();
 /* ===== camada ONLINE v6.1 ===== */
 var URL_SERVICO='https://script.google.com/macros/s/AKfycbysE2NUoGxL4hMDFxNO0Jtt4MnL191idSk5RxRC1CdSy4OWeTPKZbJ6b3Ok8CtDhM_L/exec';var ONLINE=false;
