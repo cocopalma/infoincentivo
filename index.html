@@ -116,7 +116,7 @@ function render(){back.style.display='none';ctrl.style.display='block';ttl.textC
  var t=norm(q.value),c=com.value,res=[];
  ORDEM.forEach(function(k){var cs=P[k].campos;
   if(c&&!cs.some(function(d){return d.com==c}))return;
-  var td=t.replace(/\D/g,'');
+  var td=/^[\d\s+]+$/.test(t)?t.replace(/\D/g,''):'';
   if(t&&norm(cs[0].nome).indexOf(t)<0&&norm(cs[0].ref).indexOf(t)<0&&!cs.some(function(d){return norm(d.nome).indexOf(t)>=0})&&!(td.length>=3&&cs.some(function(d){return String(d.conta||'').replace(/\D/g,'').indexOf(td)>=0||String(d.tel||'').replace(/\D/g,'').indexOf(td)>=0})))return;
   res.push(k);});
  var nca=0,vat=0,nc=0;
