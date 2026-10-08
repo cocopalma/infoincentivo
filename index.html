@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-07 22:00 | dados de 07/10/2026">
+<meta name="ii-versao" content="2026-10-08 12:45 | dados de 07/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -151,7 +151,17 @@ document.body.appendChild(etiq);
 function mostrarEtiq(){var n=nomeGet();etiq.innerHTML='';etiq.style.display=n?'block':'none';if(!n)return;
  var sp=document.createElement('span');sp.textContent='Utilizador: '+n+' · ';etiq.appendChild(sp);
  var a=document.createElement('a');a.href='#';a.textContent='Mudar o meu código';a.style.color='#1a7a3a';
- a.addEventListener('click',function(e){e.preventDefault();abrirMudar(false);});etiq.appendChild(a);}
+ a.addEventListener('click',function(e){e.preventDefault();abrirMudar(false);});etiq.appendChild(a);
+ var sep=document.createElement('span');sep.textContent=' · ';etiq.appendChild(sep);
+ var bs=document.createElement('a');bs.href='#';bs.textContent='Sair';bs.style.cssText='color:#fff;background:#b00020;padding:1px 9px;border-radius:9px;text-decoration:none;font-weight:700';
+ bs.addEventListener('click',function(e){e.preventDefault();sair();});etiq.appendChild(bs);}
+/* terminar a sessão neste aparelho (botão «Sair») */
+function sair(){if(!confirm('Terminar a sessão neste aparelho? Para voltar a entrar vai precisar do seu código.'))return;
+ var c=codGet();
+ try{if(c)jsonp({log:1,acao:'sessão terminada pelo utilizador (Sair)',termo:'',quando:new Date().toISOString(),cod:c},function(){},function(){});}catch(x){}
+ limparCodigo();
+ try{q.value='';out.innerHTML='';stats.innerHTML='';back.style.display='none';ctrl.style.display='block';window.scrollTo(0,0);}catch(x){}
+ abrirPorta('Sessão terminada.');}
 var caixaM=document.createElement('div');
 caixaM.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:210;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
 function campoM(id,rot){return '<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+rot+'</div><input id="'+id+'" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="-webkit-text-security:disc;width:100%;box-sizing:border-box;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #bbb;border-radius:8px">';}
