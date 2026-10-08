@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-08 12:45 | dados de 07/10/2026">
+<meta name="ii-versao" content="2026-10-08 13:10 | dados de 07/10/2026">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -143,6 +143,8 @@ var chip=document.createElement('div');
 chip.style.cssText='position:fixed;top:8px;right:10px;z-index:99;font:12px/1.4 sans-serif;padding:3px 10px;border-radius:12px;font-weight:700;background:#ffe2b8;color:#7a4a00;box-shadow:0 1px 3px rgba(0,0,0,.2)';
 chip.textContent='\u25CF OFFLINE \u2014 dados de 07/10/2026';document.body.appendChild(chip);
 /* ===== identificação por código pessoal (v10) ===== */
+function oferGet(n){try{return (JSON.parse(localStorage.getItem('ii_ofer')||'[]')).indexOf(n)>=0}catch(e){return false}}
+function oferSet(n){try{var a=JSON.parse(localStorage.getItem('ii_ofer')||'[]');if(a.indexOf(n)<0)a.push(n);localStorage.setItem('ii_ofer',JSON.stringify(a))}catch(e){}}
 function codGet(){try{return localStorage.getItem('ii_cod')||''}catch(e){return ''}}
 function nomeGet(){try{return localStorage.getItem('ii_nome')||''}catch(e){return ''}}
 var etiq=document.createElement('div');
@@ -159,9 +161,8 @@ function mostrarEtiq(){var n=nomeGet();etiq.innerHTML='';etiq.style.display=n?'b
 function sair(){if(!confirm('Terminar a sessão neste aparelho? Para voltar a entrar vai precisar do seu código.'))return;
  var c=codGet();
  try{if(c)jsonp({log:1,acao:'sessão terminada pelo utilizador (Sair)',termo:'',quando:new Date().toISOString(),cod:c},function(){},function(){});}catch(x){}
- limparCodigo();
  try{q.value='';out.innerHTML='';stats.innerHTML='';back.style.display='none';ctrl.style.display='block';window.scrollTo(0,0);}catch(x){}
- abrirPorta('Sessão terminada.');}
+ abrirPorta('','sair');}
 var caixaM=document.createElement('div');
 caixaM.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:210;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
 function campoM(id,rot){return '<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+rot+'</div><input id="'+id+'" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="-webkit-text-security:disc;width:100%;box-sizing:border-box;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #bbb;border-radius:8px">';}
@@ -216,8 +217,8 @@ var TXT_ENTRAR='Escreva o seu código de acesso.<br><span style="font-size:12px;
 var BLOQUEADO=false;
 function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex';document.getElementById('ii_cod_msg').style.color='#b00020';document.getElementById('ii_cod_msg').textContent=msg||'';
  var t=document.getElementById('ii_cod_txt');
- if(bloqueio){var n=nomeGet().split(' — ')[0];t.innerHTML='';var b=document.createElement('b');b.textContent=(bloqueio==='inicio')?('Bem-vindo de volta'+(n?', '+n:'')+'.'):'Sessão bloqueada por inactividade.';t.appendChild(b);
-   t.appendChild(document.createElement('br'));t.appendChild(document.createTextNode(bloqueio==='inicio'?'Escreva o seu código para entrar.':((n?n+', e':'E')+'screva o seu código para continuar.')));}
+ if(bloqueio){var n=nomeGet().split(' — ')[0];t.innerHTML='';var b=document.createElement('b');b.textContent=(bloqueio==='inicio')?('Bem-vindo de volta'+(n?', '+n:'')+'.'):(bloqueio==='sair')?'Sessão terminada.':'Sessão bloqueada por inactividade.';t.appendChild(b);
+   t.appendChild(document.createElement('br'));t.appendChild(document.createTextNode(bloqueio==='inicio'?'Escreva o seu código para entrar.':bloqueio==='sair'?('Para voltar a entrar'+(n?', '+n+',':'')+' escreva o seu código. Outra pessoa: toque em «Entrar com outro código».'):((n?n+', e':'E')+'screva o seu código para continuar.')));}
  else t.innerHTML=TXT_ENTRAR;
  document.getElementById('ii_cod_outro').style.display=bloqueio?'inline-block':'none';
  var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
@@ -248,7 +249,7 @@ function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();
  m.style.color='#555';m.textContent='A verificar… (pode demorar alguns segundos)';
  function ok(d){
    if(d&&d.ok){errSet({});try{localStorage.setItem('ii_cod',c);localStorage.setItem('ii_nome',d.nome);localStorage.setItem('ii_mail',d.mail||'')}catch(e){}
-     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();enviarTerminoPendente();if(!eraBloqueio)abrirMudar(true);}
+     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);filaEnviar();enviarTerminoPendente();if(!eraBloqueio&&!oferGet(d.nome)){oferSet(d.nome);abrirMudar(true);}}
    else registarErro(eraBloqueio);}
  jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){
    if(eraBloqueio){registarErro(true);return;}
