@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="ii-versao" content="2026-10-18 v2 | dados só depois do código, cifrados no aparelho">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InfoIncentivo</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a7a3a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,Roboto,Arial,sans-serif;background:#f2f4f0;color:#222;font-size:15px}
+header{background:#2F5233;color:#fff;padding:12px 14px;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px}
+header h1{font-size:16px}header .sub{font-size:11px;opacity:.85;margin-top:2px}
+#back{display:none;background:#fff;color:#2F5233;border:0;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700}
+.ctrl{padding:10px 12px;background:#fff;border-bottom:1px solid #ddd}
+input,select{width:100%;padding:10px;border:1px solid #bbb;border-radius:8px;font-size:16px;margin-bottom:8px;background:#fff}
+#stats{font-size:12px;color:#555;padding:8px 14px}
+.row{background:#fff;margin:6px 10px;padding:10px 12px;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.07);display:flex;align-items:center;gap:8px}
+.row .info{flex:1;min-width:0}
+.row .nm{font-weight:600;color:#2F5233;font-size:15px}
+.row .dt{font-size:12px;color:#666;margin-top:2px}
+.pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;white-space:nowrap}
+.pok{background:#e2efe2;color:#2F5233}.patr{background:#fde8e8;color:#b00}.pmix{background:#fff3d6;color:#8a5a00}
+.card{background:#fff;border-radius:10px;margin:8px 10px;padding:12px 14px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.card h3{font-size:14px;color:#2F5233;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px}
+.grid b{font-weight:600}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin:2px 4px 0 0}
+.ok{background:#e2efe2;color:#2F5233}.no{background:#fde8e8;color:#b00}
+.sterm{background:#ffcdd2;color:#8a1f1f;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;display:inline-block}
+.hist{margin-top:8px;font-size:13px}
+.hist table{width:100%;border-collapse:collapse}
+.hist th{text-align:left;font-size:11px;color:#666;border-bottom:1px solid #ddd;padding:3px 4px}
+.hist td{padding:3px 4px;border-bottom:1px solid #f0f0f0}
+.hist td:last-child,.hist th:last-child{text-align:right}
+.atraso{margin-top:8px;padding:8px;border-radius:8px;background:#fde8e8;color:#900;font-size:13px}
+.emdia{margin-top:8px;padding:8px;border-radius:8px;background:#e2efe2;color:#2F5233;font-size:13px;font-weight:600}
+.prox{font-size:12px;color:#555;margin-top:6px}
+.aviso{text-align:center;color:#777;padding:24px;font-size:14px}
+.nota{margin:8px 10px;padding:10px 12px;border-radius:10px;background:#fff3d6;color:#6a4a00;font-size:13px;border:1px solid #e5c877}
+.transv{background:#2F5233;color:#fff;border-radius:10px;margin:8px 10px;padding:12px 14px}
+.transv h2{font-size:18px}
+.transv .g{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px;margin-top:8px}
+.transv .tot{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.3);font-size:14px}
+footer{text-align:center;font-size:11px;color:#999;padding:14px}
+</style></head><body>
+<header><button id="back" onclick="voltar()">&#8592; Voltar</button>
+<div style="flex:1"><h1 id="ttl">InfoIncentivo</h1>
+<div class="sub">Entrar com o código pessoal · sem internet funciona até 7 dias</div></div></header>
+<div class="ctrl" id="ctrl">
+<input id="q" type="search" name="search" aria-label="search" role="searchbox" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" placeholder="Pesquisar nome, referência ou número de conta…">
+<select id="com"><option value="">Todas as comunidades</option></select>
+</div>
+<div id="stats"></div><div id="out"></div>
+<footer>Valor da tranche = última contagem de plantas vivas validada pelo M&amp;E × 25 MZN; campos de 2026 ainda sem contagem do M&amp;E: mudas plantadas × 25 MZN.<br><span id="ii_rodape"></span></footer>
+<script>
+var D=[]; /* 18/10/2026: a aplicação publicada não traz dados. Os dados chegam do servidor só depois do código e ficam no aparelho cifrados com o código. */
+function norm(s){return (s||'').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function fmt(n){return (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+var P={},ORDEM=[],DADOS_DE='';
+function carregarDados(arr,actualizado){D=arr;P={};ORDEM=[];DADOS_DE=actualizado||'';
+ D.forEach(function(d){var k=norm(d.ref);if(!P[k]){P[k]={campos:[]};ORDEM.push(k);}P[k].campos.push(d);});
+ ORDEM.sort(function(a,b){return norm(P[a].campos[0].nome)<norm(P[b].campos[0].nome)?-1:1});
+ var cs=[];D.forEach(function(d){if(d.com&&cs.indexOf(d.com)<0)cs.push(d.com)});cs.sort();
+ var v=com.value;com.innerHTML='<option value="">'+L('Todas as comunidades')+'</option>'+cs.map(function(c){var o=document.createElement('option');o.textContent=c;return o.outerHTML}).join('');com.value=v;
+ try{document.getElementById('ii_rodape').textContent=DADOS_DE?L('Dados da base de incentivos de ')+DADOS_DE+'.':'';}catch(e){}
+ try{if(!ONLINE)setOn(false);}catch(e){}
+ if(back.style.display!=='block')render();}
+function limparDados(){D=[];P={};ORDEM=[];DADOS_DE='';try{q.value='';out.innerHTML='';stats.innerHTML='';com.value='';}catch(e){}}
+var q=document.getElementById('q'),com=document.getElementById('com'),out=document.getElementById('out'),
+    stats=document.getElementById('stats'),back=document.getElementById('back'),ctrl=document.getElementById('ctrl'),ttl=document.getElementById('ttl');
+
+/* ===== língua PT/EN (08/10/2026) ===== */
+var LANG='pt';try{LANG=localStorage.getItem('ii_lang')||'pt'}catch(e){}
+var EN={"Em dia": "Up to date", "Contagem 0 — verificar terreno": "Count 0 — check the field", "Pendência: ": "Pending: ", "sem contrato/termo assinado": "no signed contract/agreement", "sem contrato assinado": "no signed contract", "sem termo assinado": "no signed agreement", "Atraso ": "Overdue ", "{a} de {n} campos c/ atraso": "{a} of {n} fields overdue", " campos": " fields", "Plantio: ": "Planted: ", "Conta: Não": "Account: No", "Campo": "Field", " de ": " of ", " — plantio ": " — planted ", "Mudas plantadas: ": "Seedlings planted: ", "Vivas (últ. contagem): ": "Alive (last count): ", "Tranche paga": "Tranche paid", "Data": "Date", "Valor (MZN)": "Amount (MZN)", "Total recebido": "Total received", "Ainda sem pagamentos registados.": "No payments recorded yet.", "Em atraso: ": "Overdue: ", "Próxima tranche: ": "Next tranche: ", "Referência: ": "Reference: ", "Comunidade: ": "Community: ", "Telefone: ": "Phone: ", "não registado": "not registered", "Conta móvel: ": "Mobile account: ", "não registada": "not registered", "Titular: ": "Account holder: ", "Acordo assinado: ": "Signed agreement: ", "Sim (": "Yes (", "Campos: ": "Fields: ", "Total recebido: ": "Total received: ", " · Em atraso: ": " · Overdue: ", " · Sem atrasos": " · Nothing overdue", "⚠ Esta referência tem nomes diferentes na base — confirmar se é o mesmo produtor.": "⚠ This reference has different names in the database — confirm it is the same farmer.", " produtores · ": " farmers · ", " em ": " in ", " campos com atraso (": " fields overdue (", "Escreve um nome, uma referência ou um número de conta, ou escolhe uma comunidade para ver a lista completa.": "Type a name, a reference or an account number, or choose a community to see the full list.", "Nenhum produtor encontrado. Tenta só parte do nome.": "No farmer found. Try only part of the name.", "Utilizador: ": "User: ", "Mudar o meu código": "Change my code", "Sair": "Log out", "Terminar a sessão neste aparelho? Para voltar a entrar vai precisar do seu código.": "End the session on this device? You will need your code to sign in again.", "Se quiser, escolha agora o seu próprio código. Também o pode mudar mais tarde em «Mudar o meu código», no fundo do ecrã.": "If you wish, choose your own code now. You can also change it later under “Change my code”, at the bottom of the screen.", "6 algarismos. Não use repetições (111111), sequências (123456) nem datas de nascimento.": "6 digits. Do not use repetitions (111111), sequences (123456) or birth dates.", "Código actual": "Current code", "Código novo": "New code", "Repita o código novo": "Repeat the new code", "Cancelar": "Cancel", "Guardar": "Save", "Bem-vindo, ": "Welcome, ", "Agora não": "Not now", "O código actual não está certo.": "The current code is not correct.", "O código novo tem de ter 6 algarismos.": "The new code must have 6 digits.", "Os dois códigos novos não são iguais.": "The two new codes do not match.", "A guardar…": "Saving…", "Código alterado. Use o novo a partir de agora.": "Code changed. Use the new one from now on.", "Código demasiado fácil (repetição ou sequência). Escolha outro.": "Code too easy (repetition or sequence). Choose another one.", "Esse código não está disponível. Escolha outro.": "That code is not available. Choose another one.", "O código novo é igual ao actual.": "The new code is the same as the current one.", "Não foi possível mudar o código. Tente de novo.": "The code could not be changed. Try again.", "Sem internet. Para mudar o código é preciso internet.": "No internet. Changing the code requires internet.", "Não foi possível guardar agora. Tente de novo dentro de alguns segundos.": "Could not save now. Try again in a few seconds.", "Entrar": "Sign in", "Esqueci o meu código": "I forgot my code", "Não é esta pessoa? Entrar com outro código": "Not this person? Sign in with another code", "Escreva o seu código de acesso.": "Enter your access code.", "(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)": "(The code is personal and is provided by the platform manager. When you sign in for the first time, you can change it.)", "Bem-vindo de volta": "Welcome back", "Sessão terminada.": "Session ended.", "Sessão bloqueada por inactividade.": "Session locked due to inactivity.", "Escreva o seu código para entrar.": "Enter your code to sign in.", "Para voltar a entrar{n} escreva o seu código. Outra pessoa: toque em «Entrar com outro código».": "To sign in again{n} enter your code. Someone else: tap “Sign in with another code”.", "{n}screva o seu código para continuar.": "{n}nter your code to continue.", "Demasiadas tentativas. Tente de novo às ": "Too many attempts. Try again at ", " Parece que não se lembra do código. Toque em «Esqueci o meu código» para pedir um novo.": " It seems you do not remember your code. Tap “I forgot my code” to request a new one.", "Sessão terminada por tentativas erradas. Para entrar é preciso internet e o código certo. ": "Session ended after wrong attempts. To sign in you need internet and the correct code. ", "Código inválido. ": "Invalid code. ", "Ao 3.º erro a sessão é terminada.": "On the 3rd error the session ends.", "Restam {n} tentativa(s).": "Attempts left: {n}.", "Escreva o código.": "Enter the code.", "A verificar… (pode demorar alguns segundos)": "Checking… (this may take a few seconds)", "Sem internet. Para entrar pela primeira vez é preciso internet.": "No internet. The first sign-in requires internet.", "Não foi possível verificar o código agora. Tente de novo dentro de alguns segundos.": "Could not check the code now. Try again in a few seconds.", "Escreva o seu email. Se estiver registado, recebe lá um código novo em poucos minutos. Se não tiver email registado, escreva o seu nome: o pedido segue para o gestor da plataforma.": "Enter your email. If it is registered, you will receive a new code there within a few minutes. If you have no registered email, enter your name: the request goes to the platform manager.", "Nome": "Name", "Fechar": "Close", "Pedir código": "Request code", "Email registado para {n}: {m}": "Registered email for {n}: {m}", "Não há email registado para {n}. Escreva o seu nome e o pedido segue para o gestor da plataforma.": "No email registered for {n}. Enter your name and the request goes to the platform manager.", "Use o email que deu ao gestor da plataforma.": "Use the email you gave the platform manager.", "Escreva o seu email ou o seu nome.": "Enter your email or your name.", "O email não parece correcto.": "The email does not look correct.", "A enviar…": "Sending…", "Pedido recebido. Se o seu email estiver registado, vai receber um código novo dentro de minutos (máximo de 3 pedidos por dia). Caso contrário, o gestor da plataforma vai contactá-lo.": "Request received. If your email is registered, you will receive a new code within minutes (maximum 3 requests per day). Otherwise, the platform manager will contact you.", "Não foi possível enviar o pedido. Tente de novo.": "Could not send the request. Try again.", "Sem internet. Para pedir um código novo é preciso internet.": "No internet. Requesting a new code requires internet.", "Não foi possível confirmar o pedido. Verifique o seu email dentro de alguns minutos antes de pedir de novo.": "Could not confirm the request. Check your email in a few minutes before asking again.", "Há dados novos no InfoIncentivo": "There is new data in InfoIncentivo", "Toque aqui para actualizar.": "Tap here to update.", "O seu código deixou de ser válido. Fale com o gestor da plataforma.": "Your code is no longer valid. Contact the platform manager.", "Todas as comunidades": "All communities", "Pesquisar nome, referência ou número de conta…": "Search name, reference or account number…", "Voltar": "Back", "ONLINE — dados de ": "ONLINE — data as of ", "OFFLINE — dados de ": "OFFLINE — data as of "};
+Object.assign(EN,{'Entrar com o código pessoal · sem internet funciona até 7 dias':'Sign in with your personal code · works offline for up to 7 days','Dados da base de incentivos de ':'Data from the incentive database of ','Entre com o seu código para carregar os dados.':'Sign in with your code to load the data.','A descarregar os dados…':'Downloading data…','● SEM DADOS':'● NO DATA','● SEM INTERNET — dados de ':'● OFFLINE — data of ','● ONLINE — dados de ':'● ONLINE — data of ','Os dados guardados neste aparelho expiraram (7 dias sem ligação). Ligue-se à internet para entrar.':'The data stored on this device expired (7 days without connection). Connect to the internet to sign in.','O servidor está bloqueado durante 1 hora por excesso de códigos errados. Os dados guardados no aparelho continuam disponíveis.':'The server is locked for 1 hour due to too many wrong codes. Data stored on this device is still available.','Sem internet. Para entrar neste aparelho pela primeira vez (ou depois de «Sair») é preciso internet.':'No internet. To sign in on this device for the first time (or after «Sign out») you need internet.','Terminar a sessão neste aparelho? Os dados guardados no aparelho são apagados e para voltar a entrar vai precisar de internet e do seu código.':'Sign out on this device? The data stored on the device will be deleted and to sign in again you will need internet and your code.'});
+function L(s){return (LANG==='en'&&EN[s]!==undefined)?EN[s]:s}
+function Lf(s,o){s=L(s);for(var k in o)s=s.split('{'+k+'}').join(o[k]);return s}
+var REL={'filho':'son','filha':'daughter','esposa':'wife','esposo':'husband','marido':'husband','irmão':'brother','irmao':'brother','irmã':'sister','irma':'sister','amigo':'friend','amiga':'friend','pai':'father','mãe':'mother','mae':'mother','sobrinho':'nephew','sobrinha':'niece','neto':'grandson','neta':'granddaughter','tio':'uncle','tia':'aunt','primo':'cousin','prima':'cousin','genro':'son-in-law','nora':'daughter-in-law','cunhado':'brother-in-law','cunhada':'sister-in-law','sogro':'father-in-law','sogra':'mother-in-law','vizinho':'neighbour','vizinha':'neighbour'};
+var MOTIVO={'a conta móvel ainda não foi verificada (simulação)':'the mobile account has not yet been verified (simulation)',
+ 'falta o contrato/termo de adesão':'missing signed contract/membership agreement','falta a conta móvel':'missing mobile account',
+ 'falta o contrato/termo de adesão e a conta móvel':'missing signed contract/membership agreement and mobile account',
+ 'em verificação pela equipa do projecto':'under review by the project team',
+ 'falta a contagem de plantas vivas validada pelo M&E':'missing live-plant count validated by M&E'};
+var FIXO={'Pagamentos retidos: a produtora recusou-se a assinar o contrato deste campo em 2025, quando foi procurada para o fazer. Pela regra, campos sem contrato assinado não recebem incentivo, e quem foi procurado para assinar e recusou não assina mais, salvo justificação e autorização posterior da gestão do projecto.':
+ 'Payments withheld: the farmer refused to sign the contract for this field in 2025 when she was approached to do so. Under the rule, fields without a signed contract do not receive the incentive, and anyone who was approached to sign and refused cannot sign later, unless justified and later authorised by project management.',
+ 'Sem incentivo previsto: não assinou o contrato em 2025. Pela regra do projecto, quem não assinou em 2025 não assina este ano, salvo justificação plausível aceite pela gestão do projecto, depois de verificado o campo.':
+ 'No incentive expected: did not sign the contract in 2025. Under the project rule, anyone who did not sign in 2025 cannot sign this year, unless a plausible justification is accepted by project management after the field has been checked.'};
+function trLista(x){return x.replace(/\(vencida /g,'(due ').replace(/ e (T\d)/g,' and $1')}
+function trRot(r){var m;
+ if(m=r.match(/^no pagamento do corte de (\S+) \(enviado à tesouraria\)$/))return 'in the payment run of the '+m[1]+' cut-off (sent to treasury)';
+ if(m=r.match(/^na adenda de (\S+)$/))return 'in the addendum of '+m[1];
+ if(r==='no próximo pagamento')return 'in the next payment';
+ return null;}
+function trFrase(p){var m,r;
+ if(FIXO[p])return FIXO[p];
+ if(m=p.match(/^(.+?) (vai|vão) (.+?) — total ([\d\.]+) MZN$/)){r=trRot(m[3]);if(r)return trLista(m[1])+' '+(m[2]==='vai'?'goes':'go')+' '+r+' — total '+m[4]+' MZN';}
+ if(m=p.match(/^(.+?) (retida|retidas) — (.+)$/)){var mo=MOTIVO[m[3]],c;
+   if(!mo&&(c=m[3].match(/^contagem validada de (\d+) plantas vivas — sem valor$/)))mo='validated count of '+c[1]+' live plants — no amount';
+   if(mo)return trLista(m[1])+' withheld — '+mo;}
+ if(m=p.match(/^Reposição de ([\d\.]+) MZN \((.+?), paga antes para conta errada( por erro do projecto)?\) vai (.+)$/)){r=trRot(m[4]);
+   if(r)return 'Repayment of '+m[1]+' MZN ('+trLista(m[2])+', previously paid to a wrong account'+(m[3]?' due to a project error':'')+') goes '+r;}
+ if(m=p.match(/^Reposição de ([\d\.]+) MZN \((.+?), paga antes para conta errada\) foi carregada para pagamento a (\S+) \(folha de reposições do corte de (\S+)\)$/))
+   return 'Repayment of '+m[1]+' MZN ('+trLista(m[2])+', previously paid to a wrong account) was loaded for payment on '+m[3]+' (repayments sheet of the '+m[4]+' cut-off)';
+ if(m=p.match(/^(.+?) foi carregada para pagamento a (\S+) \(folha de reposições do corte de (\S+)\) — total ([\d\.]+) MZN$/))
+   return trLista(m[1])+' was loaded for payment on '+m[2]+' (repayments sheet of the '+m[3]+' cut-off) — total '+m[4]+' MZN';
+ if(m=p.match(/^(T\d) — prevista (\S+) \(([\d\.]+) MZN\)$/))return m[1]+' — expected '+m[2]+' ('+m[3]+' MZN)';
+ if(m=p.match(/^(T\d) — prevista (\S+) \(valor depende da contagem de plantas vivas do M&E\)$/))return m[1]+' — expected '+m[2]+' (amount depends on the M&E live-plant count)';
+ if(m=p.match(/^Conta de terceiro — ([^:]+?)(: (.*))?$/)){var rl=m[1].trim().toLowerCase();return 'Third-party account — '+(REL[rl]||m[1])+(m[2]?': '+m[3]:'');}
+ return p;}
+/* textos que vêm dos dados (situação, próxima tranche, titular): traduzidos ao mostrar; sem regra, ficam em português */
+function TD(s){if(LANG!=='en'||!s)return s;return String(s).split('; ').map(trFrase).join('; ');}
+function trocarLingua(){var n=(LANG==='en')?'pt':'en';try{localStorage.setItem('ii_lang',n)}catch(e){}
+ try{if(codGet()&&!BLOQUEADO&&porta.style.display!=='flex'){sessionStorage.setItem('ii_actualizar',String(Date.now()));sessionStorage.setItem('ii_cod_tmp',codGet());}}catch(e){}
+ location.reload();}
+function botaoLingua(st){var b=document.createElement('button');b.textContent=(LANG==='en')?'PT':'EN';b.title=(LANG==='en')?'Mudar para português':'Switch to English';
+ b.style.cssText=st;b.addEventListener('click',function(e){e.preventDefault();trocarLingua();});return b;}
+(function(){document.documentElement.lang=LANG;
+ var hb=botaoLingua('background:#fff;color:#2F5233;border:0;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;flex:none');
+ hb.id='ii_lang';var hdr=document.querySelector('header');hdr.insertBefore(hb,hdr.querySelector('div'));
+ if(LANG!=='en')return;
+ document.getElementById('back').innerHTML='&#8592; '+L('Voltar');
+ q.placeholder=L('Pesquisar nome, referência ou número de conta…');
+ var o=com.querySelector('option[value=""]');if(o)o.textContent=L('Todas as comunidades');
+ var sub=document.querySelector('header .sub');
+ if(sub)sub.textContent=L(sub.textContent);
+ var f=document.querySelector('footer');
+ if(f)f.innerHTML=f.innerHTML
+  .replace('Valor da tranche = última contagem de plantas vivas validada pelo M&amp;E × 25 MZN; campos de 2026 ainda sem contagem do M&amp;E: mudas plantadas × 25 MZN.','Tranche amount = last live-plant count validated by M&amp;E × 25 MZN; 2026 fields still without an M&amp;E count: seedlings planted × 25 MZN.')
+  .replace(/Dados da base de incentivos de (\S+) \(corte de (\S+) e adendas de (.+?) enviados à tesouraria; próxima adenda a (\S+)\)\. "Em dia" = sem tranches vencidas até (\S+) por pagar\./,
+   function(m,a,b,c,d,e){return 'Data from the incentive database of '+a+' ('+b+' cut-off and addenda of '+c.replace(/ e /g,' and ')+' sent to treasury; next addendum on '+d+'). "Up to date" = no tranches due by '+e+' left unpaid.';});
+})();
+
+function situ(d){var e=d.estado;
+ if(d.atraso>0)return e.indexOf('Condicional')==0?TD(e.replace('Condicional — ',L('Pendência: '))):TD(e);
+ if(e=='Firme'||e=='')return L('Em dia');
+ if(e.indexOf('Contagem 0')==0)return L('Contagem 0 — verificar terreno');
+ if(e.indexOf('Condicional')==0)return TD(e.replace('Condicional — ',L('Pendência: ')));
+ return TD(e);}
+function lblTermo(cs){var t25=cs.some(function(c){return c.ano=='2025'}),t26=cs.some(function(c){return c.ano=='2026'});
+ if(t25&&t26)return L('sem contrato/termo assinado');
+ return t25?L('sem contrato assinado'):L('sem termo assinado');}
+function pillProd(cs){var a=cs.filter(function(c){return c.atraso>0}).length;
+ if(a==0)return '<span class="pill pok">'+L('Em dia')+'</span>';
+ if(a==cs.length)return '<span class="pill patr">'+L('Atraso ')+fmt(cs.reduce(function(s,c){return s+c.atraso},0))+'</span>';
+ return '<span class="pill pmix">'+Lf('{a} de {n} campos c/ atraso',{a:a,n:cs.length})+'</span>';}
+function linhaProd(k){var cs=P[k].campos,c0=cs[0];
+ var dts=cs.map(function(c){return c.plantio+' ('+c.ano+')'}).join(' · ');
+ return '<div class="row" onclick="abrir(\''+k+'\')"><div class="info"><div class="nm">'+c0.nome+'</div>'+
+ '<div class="dt">'+c0.ref+' · '+c0.com+(cs.length>1?' · <b>'+cs.length+L(' campos')+'</b>':'')+'<br>'+L('Plantio: ')+dts+
+ (!c0.ass?' <span class="sterm">'+lblTermo(cs)+'</span>':'')+(!c0.conta?' <span class="badge no">'+L('Conta: Não')+'</span>':'')+
+ '</div></div>'+pillProd(cs)+'</div>';}
+function cardCampo(d,i,n){
+ var h='<div class="card"><h3>'+L('Campo')+(n>1?' '+(i+1)+L(' de ')+n:'')+L(' — plantio ')+d.plantio+' ('+d.ano+')'+(n>1?' · '+d.com:'')+'</h3>';
+ h+='<div class="grid"><span>'+L('Mudas plantadas: ')+'<b>'+(d.mudas??'—')+'</b></span><span>'+L('Vivas (últ. contagem): ')+'<b>'+(d.vivas??'—')+'</b></span></div>';
+ if(d.hist.length){h+='<div class="hist"><table><tr><th>'+L('Tranche paga')+'</th><th>'+L('Data')+'</th><th>'+L('Valor (MZN)')+'</th></tr>';
+  d.hist.forEach(function(x){h+='<tr><td>'+x.t+'</td><td>'+x.d+'</td><td>'+(x.v==null?'—':fmt(x.v))+'</td></tr>';});
+  h+='<tr><td colspan="2"><b>'+L('Total recebido')+'</b></td><td><b>'+fmt(d.totpago)+'</b></td></tr></table></div>';}
+ else{h+='<div class="hist" style="color:#777">'+L('Ainda sem pagamentos registados.')+'</div>';}
+ if(d.ts&&d.ts.indexOf('retida')>=0){h+='<div class="atraso">'+TD(d.ts)+'</div>';}
+ else if(d.ts){h+='<div class="atraso" style="background:#fff6e8;color:#7a4a00">'+TD(d.ts)+'</div>';}
+ else if(d.atraso>0){h+='<div class="atraso">'+L('Em atraso: ')+'<b>'+fmt(d.atraso)+' MZN</b><br>'+situ(d)+'</div>';}
+ else{h+='<div class="emdia">'+situ(d)+'</div>';}
+ if(d.prox)h+='<div class="prox">'+L('Próxima tranche: ')+TD(d.prox)+'</div>';
+ return h+'</div>';}
+function ficha(k){var cs=P[k].campos,c0=cs[0];
+ var coms=[],noms=[];
+ cs.forEach(function(d){if(coms.indexOf(d.com)<0)coms.push(d.com);if(noms.indexOf(d.nome)<0)noms.push(d.nome);});
+ var tp=cs.reduce(function(s,d){return s+d.totpago},0),ta=cs.reduce(function(s,d){return s+d.atraso},0);
+ var h='<div class="transv"><h2>'+noms.join(' / ')+'</h2>';
+ h+='<div class="g"><span>'+L('Referência: ')+'<b>'+c0.ref+'</b></span><span>'+L('Comunidade: ')+'<b>'+coms.join(', ')+'</b></span>';
+ h+='<span>'+L('Telefone: ')+'<b>'+(c0.tel||L('não registado'))+'</b></span><span>'+L('Conta móvel: ')+'<b>'+(c0.conta||L('não registada'))+'</b></span>'+(c0.tit?'<span>'+L('Titular: ')+'<b>'+TD(c0.tit)+'</b></span>':'');
+ h+='<span>'+L('Acordo assinado: ')+(c0.ass?'<b>'+L('Sim (')+c0.ass+')</b>':'<span class="sterm">'+lblTermo(cs)+'</span>')+'</span><span>'+L('Campos: ')+'<b>'+cs.length+'</b></span></div>';
+ h+='<div class="tot">'+L('Total recebido: ')+'<b>'+fmt(tp)+' MZN</b>'+(ta>0?L(' · Em atraso: ')+'<b>'+fmt(ta)+' MZN</b>':L(' · Sem atrasos'))+'</div></div>';
+ cs.forEach(function(d){if(d.nota)h+='<div class="nota">⚠ '+TD(d.nota)+'</div>';});
+ h+=cs.map(function(d,i){return cardCampo(d,i,cs.length)}).join('');
+ if(noms.length>1)h+='<div class="aviso">'+L('⚠ Esta referência tem nomes diferentes na base — confirmar se é o mesmo produtor.')+'</div>';
+ return h;}
+function abrir(k){back.style.display='block';ctrl.style.display='none';ttl.textContent=P[k].campos[0].nome;stats.innerHTML='';
+ out.innerHTML=ficha(k);window.scrollTo(0,0);}
+function render(){back.style.display='none';ctrl.style.display='block';ttl.textContent='InfoIncentivo';
+ if(!ORDEM.length){stats.innerHTML='';out.innerHTML='<div class="aviso">'+L(codGet()?'A descarregar os dados…':'Entre com o seu código para carregar os dados.')+'</div>';return;}
+ var t=norm(q.value),c=com.value,res=[];
+ ORDEM.forEach(function(k){var cs=P[k].campos;
+  if(c&&!cs.some(function(d){return d.com==c}))return;
+  var td=/^[\d\s+]+$/.test(t)?t.replace(/\D/g,''):'';
+  if(t&&norm(cs[0].nome).indexOf(t)<0&&norm(cs[0].ref).indexOf(t)<0&&!cs.some(function(d){return norm(d.nome).indexOf(t)>=0})&&!(td.length>=3&&cs.some(function(d){return String(d.conta||'').replace(/\D/g,'').indexOf(td)>=0||String(d.tel||'').replace(/\D/g,'').indexOf(td)>=0})))return;
+  res.push(k);});
+ var nca=0,vat=0,nc=0;
+ res.forEach(function(k){P[k].campos.forEach(function(d){if(c&&d.com!=c)return;nc++;if(d.atraso>0){nca++;vat+=d.atraso}})});
+ stats.innerHTML='<b>'+res.length+'</b>'+L(' produtores · ')+nc+L(' campos')+(c?L(' em ')+c:'')+' · '+nca+L(' campos com atraso (')+fmt(vat)+' MZN)';
+ if(!t&&!c){out.innerHTML='<div class="aviso">'+L('Escreve um nome, uma referência ou um número de conta, ou escolhe uma comunidade para ver a lista completa.')+'</div>';return;}
+ if(res.length==0){out.innerHTML='<div class="aviso">'+L('Nenhum produtor encontrado. Tenta só parte do nome.')+'</div>';return;}
+ if(t&&res.length<=5){out.innerHTML=res.map(ficha).join('<div style="height:6px"></div>');}
+ else{out.innerHTML=res.map(linhaProd).join('');}
+ window.scrollTo(0,0);}
+function voltar(){render();}
+/* o navegador pode preencher a pesquisa com o email/código guardado (autofill): bloqueia até tocar no campo e limpa o que tiver «@» (07/10/2026) */
+q.setAttribute('readonly','readonly');
+function soltarQ(){if(q.hasAttribute('readonly')){q.removeAttribute('readonly');}}
+['focus','mousedown','touchstart','keydown'].forEach(function(ev){q.addEventListener(ev,soltarQ);});
+function limparAuto(){if(/@/.test(q.value)){q.value='';render();}}
+q.addEventListener('input',function(){if(/@/.test(q.value)){q.value='';}});
+[200,800,2000,4000].forEach(function(ms){setTimeout(limparAuto,ms);});
+window.addEventListener('pageshow',function(){setTimeout(limparAuto,100);});
+q.addEventListener('input',render);com.addEventListener('change',render);render();
+/* ===== camada ONLINE v6.1 ===== */
+var URL_SERVICO='https://script.google.com/macros/s/AKfycbysE2NUoGxL4hMDFxNO0Jtt4MnL191idSk5RxRC1CdSy4OWeTPKZbJ6b3Ok8CtDhM_L/exec';var ONLINE=false;
+var chip=document.createElement('div');
+chip.style.cssText='position:fixed;top:8px;right:10px;z-index:99;font:12px/1.4 sans-serif;padding:3px 10px;border-radius:12px;font-weight:700;background:#ffe2b8;color:#7a4a00;box-shadow:0 1px 3px rgba(0,0,0,.2)';
+chip.textContent=L('● SEM DADOS');document.body.appendChild(chip);
+/* ===== identificação por código pessoal (v10) ===== */
+function oferGet(n){try{return (JSON.parse(localStorage.getItem('ii_ofer')||'[]')).indexOf(n)>=0}catch(e){return false}}
+function oferSet(n){try{var a=JSON.parse(localStorage.getItem('ii_ofer')||'[]');if(a.indexOf(n)<0)a.push(n);localStorage.setItem('ii_ofer',JSON.stringify(a))}catch(e){}}
+var COD='';function codGet(){return COD}
+try{localStorage.removeItem('ii_cod')}catch(e){} /* versões antigas guardavam o código em claro */
+function nomeGet(){try{return localStorage.getItem('ii_nome')||''}catch(e){return ''}}
+var etiq=document.createElement('div');
+etiq.style.cssText='position:fixed;bottom:6px;left:8px;z-index:99;font:11px/1.3 sans-serif;color:#555;background:rgba(255,255,255,.85);padding:2px 8px;border-radius:10px';
+document.body.appendChild(etiq);
+function mostrarEtiq(){var n=nomeGet();etiq.innerHTML='';etiq.style.display=n?'block':'none';if(!n)return;
+ var sp=document.createElement('span');sp.textContent=L('Utilizador: ')+n+' · ';etiq.appendChild(sp);
+ var a=document.createElement('a');a.href='#';a.textContent=L('Mudar o meu código');a.style.color='#1a7a3a';
+ a.addEventListener('click',function(e){e.preventDefault();abrirMudar(false);});etiq.appendChild(a);
+ var sep=document.createElement('span');sep.textContent=' · ';etiq.appendChild(sep);
+ var bs=document.createElement('a');bs.href='#';bs.textContent=L('Sair');bs.style.cssText='color:#fff;background:#b00020;padding:1px 9px;border-radius:9px;text-decoration:none;font-weight:700';
+ bs.addEventListener('click',function(e){e.preventDefault();sair();});etiq.appendChild(bs);}
+/* terminar a sessão neste aparelho (botão «Sair») */
+function sair(){if(!confirm(L('Terminar a sessão neste aparelho? Os dados guardados no aparelho são apagados e para voltar a entrar vai precisar de internet e do seu código.')))return;
+ var c=codGet();
+ try{if(c)jsonp({log:1,acao:'sessão terminada pelo utilizador (Sair)',termo:'',quando:new Date().toISOString(),cod:c},function(){},function(){});}catch(x){}
+ COD='';apagarPacote();limparDados();try{back.style.display='none';ctrl.style.display='block';window.scrollTo(0,0);}catch(x){}
+ setOn(ONLINE);abrirPorta('','sair');}
+var caixaM=document.createElement('div');
+caixaM.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:210;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
+function campoM(id,rot){return '<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+rot+'</div><input id="'+id+'" type="text" inputmode="numeric" maxlength="6" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" style="-webkit-text-security:disc;width:100%;box-sizing:border-box;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #bbb;border-radius:8px">';}
+caixaM.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);text-align:center">'
+ +'<div id="ii_m_tit" style="font-size:18px;font-weight:700;color:#1a7a3a">'+L('Mudar o meu código')+'</div>'
+ +'<div id="ii_m_int" style="display:none;font-size:13px;color:#333;margin-top:6px">'+L('Se quiser, escolha agora o seu próprio código. Também o pode mudar mais tarde em «Mudar o meu código», no fundo do ecrã.')+'</div>'
+ +'<div style="font-size:12px;color:#777;margin-top:4px">'+L('6 algarismos. Não use repetições (111111), sequências (123456) nem datas de nascimento.')+'</div>'
+ +campoM('ii_m_act',L('Código actual'))+campoM('ii_m_n1',L('Código novo'))+campoM('ii_m_n2',L('Repita o código novo'))
+ +'<div style="display:flex;gap:8px;margin-top:14px"><button id="ii_m_can" style="flex:1;font-size:15px;padding:9px;border:1px solid #bbb;border-radius:8px;background:#fff">'+L('Cancelar')+'</button>'
+ +'<button id="ii_m_ok" style="flex:1;font-size:15px;padding:9px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">'+L('Guardar')+'</button></div>'
+ +'<div id="ii_m_msg" style="margin-top:10px;font-size:13px;min-height:18px"></div></div>';
+document.body.appendChild(caixaM);
+function abrirMudar(primeira){['ii_m_act','ii_m_n1','ii_m_n2'].forEach(function(i){document.getElementById(i).value=''});
+ document.getElementById('ii_m_msg').textContent='';
+ document.getElementById('ii_m_tit').textContent=primeira?(L('Bem-vindo, ')+nomeGet()):L('Mudar o meu código');
+ document.getElementById('ii_m_int').style.display=primeira?'block':'none';
+ document.getElementById('ii_m_can').textContent=primeira?L('Agora não'):L('Cancelar');
+ if(primeira)document.getElementById('ii_m_act').value=codGet();
+ caixaM.style.display='flex';}
+function msgM(t,erro){var m=document.getElementById('ii_m_msg');m.style.color=erro?'#b00020':'#0f5c2a';m.textContent=t;}
+document.getElementById('ii_m_can').addEventListener('click',function(){caixaM.style.display='none';});
+document.getElementById('ii_m_ok').addEventListener('click',function(){
+ var a=document.getElementById('ii_m_act').value.trim(),n1=document.getElementById('ii_m_n1').value.trim(),n2=document.getElementById('ii_m_n2').value.trim();
+ if(a!==codGet()){msgM(L('O código actual não está certo.'),true);return;}
+ if(!/^\d{6}$/.test(n1)){msgM(L('O código novo tem de ter 6 algarismos.'),true);return;}
+ if(n1!==n2){msgM(L('Os dois códigos novos não são iguais.'),true);return;}
+ msgM(L('A guardar…'),false);
+ var trataM=function(d){
+   if(d&&d.ok){COD=n1;if(D.length)guardarPacote(D,DADOS_DE);msgM(L('Código alterado. Use o novo a partir de agora.'),false);
+     setTimeout(function(){caixaM.style.display='none';},1800);return;}
+   var e=d&&d.erro;
+   if(e==='codigo'){caixaM.style.display='none';codigoRecusado(d);return;}
+   msgM(L(e==='fraco'?'Código demasiado fácil (repetição ou sequência). Escolha outro.':
+        e==='usado'?'Esse código não está disponível. Escolha outro.':
+        e==='igual'?'O código novo é igual ao actual.':
+        e==='formato'?'O código novo tem de ter 6 algarismos.':'Não foi possível mudar o código. Tente de novo.'),true);
+ };
+ jsonp({mudar:1,cod:a,novo:n1},trataM,function(){setTimeout(function(){jsonp({mudar:1,cod:a,novo:n1},trataM,function(){
+   msgM(L(navigator.onLine===false?'Sem internet. Para mudar o código é preciso internet.':'Não foi possível guardar agora. Tente de novo dentro de alguns segundos.'),true);});},1500);});});
+var porta=document.createElement('div');
+porta.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:#f4f7f4;display:none;align-items:center;justify-content:center;font-family:sans-serif';
+porta.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:22px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.15);text-align:center">'
+ +'<div style="font-size:20px;font-weight:700;color:#1a7a3a;margin-bottom:6px">InfoIncentivo</div>'
+ +'<div id="ii_cod_txt" style="font-size:14px;color:#333;margin-bottom:14px"></div>'
+ +'<input id="ii_cod_in" type="text" inputmode="numeric" autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false" maxlength="6" style="-webkit-text-security:disc;width:100%;box-sizing:border-box;font-size:22px;letter-spacing:4px;text-align:center;padding:10px;border:1px solid #bbb;border-radius:8px">'
+ +'<button id="ii_cod_bt" style="margin-top:12px;width:100%;font-size:16px;padding:10px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">'+L('Entrar')+'</button>'
+ +'<div id="ii_cod_msg" style="margin-top:10px;font-size:13px;color:#b00020;min-height:18px"></div>'
+ +'<a id="ii_cod_esq" href="#" style="display:block;margin-top:6px;font-size:13px;color:#1a7a3a">'+L('Esqueci o meu código')+'</a>'
+ +'<a id="ii_cod_outro" href="#" style="display:none;margin-top:8px;font-size:12px;color:#1a7a3a">'+L('Não é esta pessoa? Entrar com outro código')+'</a></div>';
+document.body.appendChild(porta);
+(function(){var b=botaoLingua('float:right;background:#e2efe2;color:#1a7a3a;border:0;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer');porta.firstChild.insertBefore(b,porta.firstChild.firstChild);})();
+var TXT_ENTRAR=L('Escreva o seu código de acesso.')+'<br><span style="font-size:12px;color:#777">'+L('(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)')+'</span>';
+var BLOQUEADO=false;
+function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex';document.getElementById('ii_cod_msg').style.color='#b00020';document.getElementById('ii_cod_msg').textContent=msg||'';
+ var t=document.getElementById('ii_cod_txt');
+ if(bloqueio){var n=nomeGet().split(' — ')[0];t.innerHTML='';var b=document.createElement('b');b.textContent=(bloqueio==='inicio')?(L('Bem-vindo de volta')+(n?', '+n:'')+'.'):(bloqueio==='sair')?L('Sessão terminada.'):L('Sessão bloqueada por inactividade.');t.appendChild(b);
+   t.appendChild(document.createElement('br'));t.appendChild(document.createTextNode(bloqueio==='inicio'?L('Escreva o seu código para entrar.'):bloqueio==='sair'?Lf('Para voltar a entrar{n} escreva o seu código. Outra pessoa: toque em «Entrar com outro código».',{n:(n?', '+n+',':'')}):Lf('{n}screva o seu código para continuar.',{n:(n?n+', e':'E')})));}
+ else t.innerHTML=TXT_ENTRAR;
+ document.getElementById('ii_cod_outro').style.display=bloqueio?'inline-block':'none';
+ var i=document.getElementById('ii_cod_in');i.value='';setTimeout(function(){try{i.focus()}catch(e){}},100);}
+function fecharPorta(){porta.style.display='none';BLOQUEADO=false;marcarActividade(true);}
+function limparCodigo(){COD='';apagarPacote();limparDados();try{localStorage.removeItem('ii_nome');localStorage.removeItem('ii_mail')}catch(e){}mostrarEtiq();}
+/* tentativas erradas: 3 erros -> 5 min; mais 3 -> 30 min; no ecrã de bloqueio, 3 erros terminam a sessão */
+function errGet(){try{return JSON.parse(localStorage.getItem('ii_err')||'{}')}catch(e){return {}}}
+function errSet(o){try{localStorage.setItem('ii_err',JSON.stringify(o))}catch(e){}}
+function hhmm(t){var d=new Date(t);return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}
+function esperaMsg(){var o=errGet();if(o.ate&&Date.now()<o.ate)return L('Demasiadas tentativas. Tente de novo às ')+hhmm(o.ate)+'.'+((o.nivel||0)>=2?L(' Parece que não se lembra do código. Toque em «Esqueci o meu código» para pedir um novo.'):'');return '';}
+function enviarTerminoPendente(){var t=null;try{t=JSON.parse(localStorage.getItem('ii_term_pend')||'null')}catch(e){}
+ if(!t||!codGet())return;
+ jsonp({log:1,acao:'sessão terminada por tentativas erradas',termo:'sessão de '+t.nome,quando:t.quando,cod:codGet()},function(){try{localStorage.removeItem('ii_term_pend')}catch(e){}},function(){});}
+function registarErro(eraBloqueio){var o=errGet();o.n=(o.n||0)+1;var m=document.getElementById('ii_cod_msg');m.style.color='#b00020';
+ if(eraBloqueio&&o.n>=3){
+   var nomeSess=nomeGet(),codSess=codGet(),quando=new Date().toISOString();
+   jsonp({log:1,acao:'sessão terminada por tentativas erradas',termo:'',quando:quando,cod:codSess},function(){},function(){
+     try{localStorage.setItem('ii_term_pend',JSON.stringify({nome:nomeSess,quando:quando}))}catch(e){}});
+   limparCodigo();o.n=0;o.nivel=1;o.ate=Date.now()+5*60000;errSet(o);
+   abrirPorta(L('Sessão terminada por tentativas erradas. Para entrar é preciso internet e o código certo. ')+esperaMsg());return;}
+ if(o.n>=3){o.n=0;o.ate=Date.now()+((o.nivel||0)>=1?30:5)*60000;o.nivel=(o.nivel||0)+1;errSet(o);m.textContent=esperaMsg();return;}
+ errSet(o);m.textContent=L('Código inválido. ')+(eraBloqueio?L('Ao 3.º erro a sessão é terminada.'):Lf('Restam {n} tentativa(s).',{n:(3-o.n)}));}
+function tentarEntrar(){var c=document.getElementById('ii_cod_in').value.trim();var m=document.getElementById('ii_cod_msg');
+ var esp=esperaMsg();if(esp){m.style.color='#b00020';m.textContent=esp;return;}
+ if(!c){m.style.color='#b00020';m.textContent=L('Escreva o código.');return;}
+ var eraBloqueio=BLOQUEADO;
+ if(eraBloqueio&&COD&&c===COD){errSet({});m.textContent='';fecharPorta();return;}
+ m.style.color='#555';m.textContent=L('A verificar… (pode demorar alguns segundos)');
+ abrirPacote(c).then(function(res){
+  if(res==='ok'){errSet({});COD=c;m.textContent='';mostrarEtiq();fecharPorta();setOn(false);pingar();return;}
+  if(res==='expirado'){m.style.color='#b00020';m.textContent=L('Os dados guardados neste aparelho expiraram (7 dias sem ligação). Ligue-se à internet para entrar.');}
+  function ok(d){
+   if(d&&d.erro==='bloqueado'){m.style.color='#b00020';m.textContent=L('O servidor está bloqueado durante 1 hora por excesso de códigos errados. Os dados guardados no aparelho continuam disponíveis.');return;}
+   if(d&&d.ok){errSet({});COD=c;try{localStorage.setItem('ii_nome',d.nome);localStorage.setItem('ii_mail',d.mail||'')}catch(e){}
+     m.textContent='';mostrarEtiq();fecharPorta();setOn(true,d.actualizado);descarregarPacote();filaEnviar();enviarTerminoPendente();if(!eraBloqueio&&!oferGet(d.nome)){oferSet(d.nome);abrirMudar(true);}}
+   else registarErro(eraBloqueio);}
+  if(navigator.onLine===false){if(res==='expirado')return;
+    if(res==='sem')m.textContent=L('Sem internet. Para entrar neste aparelho pela primeira vez (ou depois de «Sair») é preciso internet.');else registarErro(eraBloqueio);return;}
+  jsonp({login:c},ok,function(){setTimeout(function(){jsonp({login:c},ok,function(){
+   if(res==='errado'){registarErro(eraBloqueio);return;}
+   m.style.color='#b00020';
+   m.textContent=L(res==='sem'?'Sem internet. Para entrar neste aparelho pela primeira vez (ou depois de «Sair») é preciso internet.':'Não foi possível verificar o código agora. Tente de novo dentro de alguns segundos.');});},1500);});
+ });}
+/* ===== dados no aparelho: cifrados com o código (AES-GCM, chave PBKDF2), válidos 7 dias sem ligação ===== */
+var PAC='ii_pacote',VALIDADE_DIAS=7,ITER=310000,A_DESCARREGAR=false;
+function b64(u){var s='',a=new Uint8Array(u);for(var i=0;i<a.length;i+=32768)s+=String.fromCharCode.apply(null,a.subarray(i,i+32768));return btoa(s)}
+function unb64(t){var s=atob(t),a=new Uint8Array(s.length);for(var i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a}
+function chaveDe(cod,salt){return crypto.subtle.importKey('raw',new TextEncoder().encode(cod),'PBKDF2',false,['deriveKey']).then(function(k){
+ return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:ITER,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);});}
+function pacMeta(){try{return JSON.parse(localStorage.getItem(PAC)||'null')}catch(e){return null}}
+function apagarPacote(){try{localStorage.removeItem(PAC)}catch(e){}}
+function marcarSinc(){var m=pacMeta();if(!m)return;m.sinc=Date.now();try{localStorage.setItem(PAC,JSON.stringify(m))}catch(e){}}
+function guardarPacote(arr,act){if(!COD||!window.crypto||!crypto.subtle)return Promise.resolve();
+ var salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),cod=COD;
+ return chaveDe(cod,salt).then(function(k){return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,new TextEncoder().encode(JSON.stringify(arr)))})
+ .then(function(ct){if(cod!==COD)return;try{localStorage.setItem(PAC,JSON.stringify({v:2,s:b64(salt),i:b64(iv),c:b64(ct),act:act||'',sinc:Date.now()}))}catch(e){}}).catch(function(){});}
+function abrirPacote(cod){var m=pacMeta();if(!m||!m.c)return Promise.resolve('sem');
+ if(Date.now()-(m.sinc||0)>VALIDADE_DIAS*86400000){apagarPacote();return Promise.resolve('expirado');}
+ if(!window.crypto||!crypto.subtle)return Promise.resolve('sem');
+ return chaveDe(cod,unb64(m.s)).then(function(k){return crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(m.i)},k,unb64(m.c))})
+ .then(function(pt){carregarDados(JSON.parse(new TextDecoder().decode(pt)),m.act);return 'ok'},function(){return 'errado'});}
+function descarregarPacote(){if(A_DESCARREGAR||!COD)return;A_DESCARREGAR=true;if(!D.length)render();
+ jsonp({pacote:1,cod:COD},function(d){A_DESCARREGAR=false;if(codigoRecusado(d))return;
+   if(d&&d.ok&&d.cab&&d.linhas){var arr=d.linhas.map(function(r){var o={};d.cab.forEach(function(h,j){o[h]=r[j]});return mapear(o)});
+     carregarDados(arr,d.actualizado);setOn(true,d.actualizado);guardarPacote(arr,d.actualizado);}},
+  function(){A_DESCARREGAR=false;setOn(false);});}
+document.getElementById('ii_cod_bt').addEventListener('click',tentarEntrar);
+document.getElementById('ii_cod_in').addEventListener('keydown',function(e){if(e.key==='Enter')tentarEntrar();});
+try{localStorage.removeItem('ii_utilizador');localStorage.removeItem('ii_posto')}catch(e){}
+document.getElementById('ii_cod_outro').addEventListener('click',function(e){e.preventDefault();limparCodigo();abrirPorta('');});
+var caixaE=document.createElement('div');
+caixaE.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:220;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;font-family:sans-serif';
+caixaE.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:20px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.2);text-align:center">'
+ +'<div style="font-size:18px;font-weight:700;color:#1a7a3a">'+L('Esqueci o meu código')+'</div>'
+ +'<div style="font-size:13px;color:#333;margin-top:6px">'+L('Escreva o seu email. Se estiver registado, recebe lá um código novo em poucos minutos. Se não tiver email registado, escreva o seu nome: o pedido segue para o gestor da plataforma.')+'</div>'
+ +'<div id="ii_e_reg" style="font-size:13px;color:#0f5c2a;margin-top:8px;font-weight:700"></div>'
+ +'<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">Email</div><input id="ii_e_mail" type="email" autocomplete="email" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border:1px solid #bbb;border-radius:8px">'
+ +'<div style="text-align:left;font-size:13px;color:#333;margin-top:10px">'+L('Nome')+'</div><input id="ii_e_nome" type="text" autocomplete="name" style="width:100%;box-sizing:border-box;font-size:16px;padding:8px;border:1px solid #bbb;border-radius:8px">'
+ +'<div style="display:flex;gap:8px;margin-top:14px"><button id="ii_e_can" style="flex:1;font-size:15px;padding:9px;border:1px solid #bbb;border-radius:8px;background:#fff">'+L('Fechar')+'</button>'
+ +'<button id="ii_e_ok" style="flex:1;font-size:15px;padding:9px;border:0;border-radius:8px;background:#1a7a3a;color:#fff;font-weight:700">'+L('Pedir código')+'</button></div>'
+ +'<div id="ii_e_msg" style="margin-top:10px;font-size:13px;min-height:18px"></div></div>';
+document.body.appendChild(caixaE);
+function msgE(t,erro){var m=document.getElementById('ii_e_msg');m.style.color=erro?'#b00020':'#0f5c2a';m.textContent=t;}
+document.getElementById('ii_cod_esq').addEventListener('click',function(e){e.preventDefault();
+ document.getElementById('ii_e_mail').value='';document.getElementById('ii_e_nome').value=(nomeGet()||'').split(' — ')[0];msgE('',false);
+ var mk=null;try{mk=localStorage.getItem('ii_mail')}catch(x){}var nn=(nomeGet()||'').split(' — ')[0];
+ document.getElementById('ii_e_reg').textContent=(nn&&mk)?Lf('Email registado para {n}: {m}',{n:nn,m:mk}):((nn&&mk==='')?Lf('Não há email registado para {n}. Escreva o seu nome e o pedido segue para o gestor da plataforma.',{n:nn}):L('Use o email que deu ao gestor da plataforma.'));
+ document.getElementById('ii_e_ok').disabled=false;caixaE.style.display='flex';});
+document.getElementById('ii_e_can').addEventListener('click',function(){caixaE.style.display='none';});
+document.getElementById('ii_e_ok').addEventListener('click',function(){
+ var em=document.getElementById('ii_e_mail').value.trim(),nm=document.getElementById('ii_e_nome').value.trim();
+ if(!em&&!nm){msgE(L('Escreva o seu email ou o seu nome.'),true);return;}
+ if(em&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){msgE(L('O email não parece correcto.'),true);return;}
+ var bt=document.getElementById('ii_e_ok');bt.disabled=true;msgE(L('A enviar…'),false);
+ var trata=function(d){
+   if(d&&d.ok){var o=errGet();if(o.ate&&o.ate>Date.now()+5*60000){o.ate=Date.now()+5*60000;errSet(o);}
+     msgE(L('Pedido recebido. Se o seu email estiver registado, vai receber um código novo dentro de minutos (máximo de 3 pedidos por dia). Caso contrário, o gestor da plataforma vai contactá-lo.'),false);}
+   else{bt.disabled=false;msgE(L('Não foi possível enviar o pedido. Tente de novo.')+(d&&d.erro?' ('+String(d.erro).substring(0,120)+')':''),true);}};
+ jsonp({esqueci:1,email:em,nome:nm},trata,function(){bt.disabled=false;
+   msgE(L(navigator.onLine===false?'Sem internet. Para pedir um código novo é preciso internet.':'Não foi possível confirmar o pedido. Verifique o seu email dentro de alguns minutos antes de pedir de novo.'),true);});});
+/* bloqueio por inactividade */
+var BLOQ_MIN=10;
+function ultimaAct(){try{return Number(localStorage.getItem('ii_ult')||0)}catch(e){return 0}}
+var _ultGrav=0;
+function marcarActividade(forcar){if(BLOQUEADO||porta.style.display==='flex')return;var a=Date.now();if(!forcar&&a-_ultGrav<15000)return;_ultGrav=a;try{localStorage.setItem('ii_ult',String(a))}catch(e){}}
+function verBloqueio(){if(!codGet()||BLOQUEADO||porta.style.display==='flex')return;
+ if(Date.now()-ultimaAct()>BLOQ_MIN*60000){try{caixaM.style.display='none'}catch(e){}abrirPorta('',true);}}
+['click','keydown','touchstart','scroll','input'].forEach(function(ev){document.addEventListener(ev,function(){marcarActividade(false)},{passive:true,capture:true});});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)verBloqueio();});
+setInterval(verBloqueio,30000);
+/* aviso de versão nova: compara a versão desta página com a publicada no GitHub */
+var VERSAO_LOCAL=(document.querySelector('meta[name="ii-versao"]')||{}).content||'';
+var faixa=document.createElement('div');
+faixa.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:150;background:#1a7a3a;color:#fff;font:14px/1.4 sans-serif;padding:12px 14px;text-align:center;display:none;box-shadow:0 -2px 6px rgba(0,0,0,.2)';
+faixa.addEventListener('click',function(){try{if(codGet()&&!BLOQUEADO){sessionStorage.setItem('ii_actualizar',String(Date.now()));sessionStorage.setItem('ii_cod_tmp',codGet());}}catch(e){}location.reload();});
+document.body.appendChild(faixa);
+function verVersao(){if(!VERSAO_LOCAL||navigator.onLine===false||!window.fetch)return;
+ fetch('./index.html?versao='+Date.now(),{cache:'no-store',headers:{'Range':'bytes=0-1023'}}).then(function(r){return r.text()}).then(function(t){
+   var m=t.match(/name="ii-versao" content="([^"]+)"/);
+   if(m&&m[1]!==VERSAO_LOCAL){var dd=(m[1].split('|')[1]||'').trim();
+     faixa.innerHTML='';var b=document.createElement('b');b.textContent=L('Há dados novos no InfoIncentivo')+(dd?' ('+(LANG==='en'?dd.replace('dados de','data of'):dd)+')':'')+'.';faixa.appendChild(b);
+     faixa.appendChild(document.createElement('br'));faixa.appendChild(document.createTextNode(L('Toque aqui para actualizar.')));faixa.style.display='block';}
+ }).catch(function(){});}
+setTimeout(verVersao,15000);setInterval(verVersao,10*60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)verVersao();});
+/* ao abrir a aplicação pede sempre o código (desbloqueio no telemóvel, sem internet) */
+var _act=0;try{_act=Number(sessionStorage.getItem('ii_actualizar')||0);sessionStorage.removeItem('ii_actualizar')}catch(e){}
+var _ctmp='';try{_ctmp=sessionStorage.getItem('ii_cod_tmp')||'';sessionStorage.removeItem('ii_cod_tmp')}catch(e){}
+mostrarEtiq();
+if(_act&&Date.now()-_act<60000&&_ctmp){abrirPacote(_ctmp).then(function(r){if(r==='ok'){COD=_ctmp;marcarActividade(true);pingar();}else abrirPorta(nomeGet()?'':'',nomeGet()?'inicio':undefined);});} /* recarregamento pedido pela faixa ou pela língua */
+else if(nomeGet()&&pacMeta())abrirPorta('','inicio');
+else abrirPorta();
+function codigoRecusado(d){if(d&&d.erro==='bloqueado'){chip.textContent='● SERVIDOR BLOQUEADO 1 h';return true;}if(d&&d.erro==='codigo'){limparCodigo();abrirPorta(L('O seu código deixou de ser válido. Fale com o gestor da plataforma.'));return true;}return false;}
+/* um pedido de cada vez: o servidor responde mal a pedidos em simultâneo */
+var FILA_P=[],OCUPADO=false;
+function jsonp(params,cb,falhou){FILA_P.push([params,cb,falhou]);proximoP();}
+function proximoP(){if(OCUPADO||!FILA_P.length)return;OCUPADO=true;var x=FILA_P.shift();
+ jsonp0(x[0],function(d){OCUPADO=false;try{x[1]&&x[1](d)}finally{proximoP()}},function(){OCUPADO=false;try{x[2]&&x[2]()}finally{proximoP()}});}
+function jsonp0(params,cb,falhou){var nome='cb'+Math.floor(Math.random()*1e9);var s=document.createElement('script');
+ var tarde=false;
+ var timer=setTimeout(function(){tarde=true;falhou&&falhou()},40000);
+ window[nome]=function(d){if(tarde)return;clearTimeout(timer);try{delete window[nome]}catch(e){}try{s.remove()}catch(e){}cb(d)};params.callback=nome;params._t=Date.now();
+ var qs=Object.keys(params).map(function(k){return k+'='+encodeURIComponent(params[k])}).join('&');
+ s.src=URL_SERVICO+'?'+qs;s.onerror=function(){if(tarde)return;tarde=true;clearTimeout(timer);falhou&&falhou()};document.body.appendChild(s);}
+function setOn(on,quando){ONLINE=on;
+ chip.style.background=on?'#c9f2d5':'#ffe2b8';chip.style.color=on?'#0f5c2a':'#7a4a00';
+ chip.textContent=on?(L('● ONLINE — dados de ')+(quando||DADOS_DE||'')):(DADOS_DE?L('● SEM INTERNET — dados de ')+DADOS_DE:L('● SEM DADOS'));}
+function pingar(){if(OCUPADO||FILA_P.length||document.hidden)return;jsonp({cod:codGet()},function(d){if(codigoRecusado(d))return;setOn(true,d.actualizado);if(codGet()&&d.codigo_valido===false){codigoRecusado({erro:'codigo'});return;}if(codGet()&&d.codigo_valido===true){marcarSinc();if(d.mail!==undefined){try{localStorage.setItem('ii_mail',d.mail||'')}catch(e){}}if(!D.length||(d.actualizado&&d.actualizado!==DADOS_DE))descarregarPacote();}filaEnviar()},function(){setOn(false)});}
+pingar();setInterval(pingar,60000);
+function dISO(v){if(typeof v=='string'&&/^\d{4}-\d{2}-\d{2}T/.test(v)){var p=v.substring(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0]}return v||null}
+function mapear(r){return {ref:String(r.ref),nome:String(r.nome),com:r.com||'',ano:String(r.ano||''),
+ plantio:dISO(r.plantio)||'\u2014',mudas:(r.mudas===''?null:r.mudas),vivas:(r.vivas===''?null:r.vivas),
+ ass:dISO(r.termo),conta:String(r.conta||''),tit:r.tit||'',tel:String(r.tel||r.conta||''),hist:(r.hist||[]),totpago:r.totpago||0,atraso:r.atraso||0,
+ ts:(r.ts||'\u2014'),estado:'',prox:r.prox||''};}
+var abrirLocal=abrir;
+/* abertura instantânea (07/10/2026): mostra já a ficha com os dados do telemóvel e actualiza-a quando chegar a resposta online */
+abrir=function(k){var ref=P[k].campos[0].ref;
+ if(!ONLINE){filaPor({acao:'abriu',termo:ref});abrirLocal(k);return;}
+ if(!codGet()){abrirPorta();return;}
+ REFRESCADOS[k]=Date.now();
+ abrirLocal(k);
+ jsonp({pr:ref,acao:'abriu',cod:codGet()},function(d){
+   if(codigoRecusado(d))return;
+   if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);
+     if(back.style.display==='block'&&ttl.textContent===P[k].campos[0].nome){out.innerHTML=fichaLocal(k);}}},
+  function(){setOn(false);});};
+
+/* apagar do aparelho as cópias antigas da aplicação (a v1 trazia os dados dentro) */
+try{if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k!=='infoincentivo-v2')caches.delete(k);});});}catch(e){}
+/* registo do service worker (PWA) */
+if('serviceWorker' in navigator && location.protocol === 'https:'){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+
+/* refresh online das fichas mostradas por pesquisa directa */
+var REFRESCADOS={};
+var fichaLocal=ficha;
+ficha=function(k){agendarRefresh(k);return fichaLocal(k);};
+function agendarRefresh(k){
+ if(!ONLINE||!codGet())return;
+ var agora=Date.now();
+ if(REFRESCADOS[k]&&agora-REFRESCADOS[k]<60000)return;
+ REFRESCADOS[k]=agora;
+ var ref=P[k].campos[0].ref;
+ jsonp({pr:ref,acao:'viu',cod:codGet()},function(d){
+   if(codigoRecusado(d))return;
+   if(d.ok&&d.campos&&d.campos.length){P[k].campos=d.campos.map(mapear);render();}
+ },function(){});
+}
+
+/* ===== registo de consultas (v8.1): quem consultou e o quê ===== */
+function filaPor(o){try{var f=JSON.parse(localStorage.getItem('ii_fila')||'[]');o.quando=new Date().toISOString();f.push(o);if(f.length>500)f=f.slice(-500);localStorage.setItem('ii_fila',JSON.stringify(f))}catch(e){}}
+function filaEnviar(){var f=[];try{f=JSON.parse(localStorage.getItem('ii_fila')||'[]')}catch(e){}
+ if(!f.length||!codGet())return;try{localStorage.setItem('ii_fila','[]')}catch(e){}
+ f.forEach(function(o){jsonp({log:1,acao:o.acao,termo:o.termo,quando:o.quando,cod:codGet()},function(d){codigoRecusado(d)},function(){filaRepor(o)})});}
+function filaRepor(o){try{var f=JSON.parse(localStorage.getItem('ii_fila')||'[]');f.push(o);localStorage.setItem('ii_fila',JSON.stringify(f))}catch(e){}}
+var _tPesq=null;
+q.addEventListener('input',function(){clearTimeout(_tPesq);var v=q.value.trim();if(v.length<3)return;
+ _tPesq=setTimeout(function(){if(ONLINE&&codGet())jsonp({log:1,acao:'pesquisa',termo:v,cod:codGet()},function(d){codigoRecusado(d)},function(){filaPor({acao:'pesquisa',termo:v})});
+  else filaPor({acao:'pesquisa',termo:v});},2500);});
+</script></body></html>
