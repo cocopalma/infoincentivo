@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt"><head><meta charset="utf-8">
-<meta name="ii-versao" content="2026-10-18 v2.1 | pacote comprimido + suaíli">
+<meta name="ii-versao" content="2026-10-18 v2.2 | língua em lista">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>InfoIncentivo</title>
 <link rel="manifest" href="manifest.json">
@@ -142,13 +142,15 @@ function trFraseSW(p){var m,r;
 /* textos que vêm dos dados (situação, próxima tranche, titular): traduzidos ao mostrar; sem regra, ficam em português */
 function TD(s){if(LANG==='pt'||!s)return s;return String(s).split('; ').map(LANG==='sw'?trFraseSW:trFrase).join('; ');}
 var PROX_L={pt:'en',en:'sw',sw:'pt'};
-function trocarLingua(){var n=PROX_L[LANG]||'pt';try{localStorage.setItem('ii_lang',n)}catch(e){}
+var NOMES_L={pt:'Português',en:'English',sw:'Kiswahili'};
+function trocarLingua(n){n=n||PROX_L[LANG]||'pt';if(n===LANG)return;try{localStorage.setItem('ii_lang',n)}catch(e){}
  try{if(codGet()&&!BLOQUEADO&&porta.style.display!=='flex'){sessionStorage.setItem('ii_actualizar',String(Date.now()));sessionStorage.setItem('ii_cod_tmp',codGet());}}catch(e){}
  location.reload();}
-function botaoLingua(st){var b=document.createElement('button');var nx=PROX_L[LANG]||'en';b.textContent=nx.toUpperCase();b.title={pt:'Mudar para português',en:'Switch to English',sw:'Badili kuwa Kiswahili'}[nx];
- b.style.cssText=st;b.addEventListener('click',function(e){e.preventDefault();trocarLingua();});return b;}
+function botaoLingua(st){var b=document.createElement('select');b.setAttribute('aria-label','Língua / Language / Lugha');
+ ['pt','en','sw'].forEach(function(k){var o=document.createElement('option');o.value=k;o.textContent=NOMES_L[k];if(k===LANG)o.selected=true;b.appendChild(o);});
+ b.style.cssText=st+';width:auto;margin:0;padding:5px 6px';b.addEventListener('change',function(){trocarLingua(b.value);});return b;}
 (function(){document.documentElement.lang=LANG;
- var hb=botaoLingua('background:#fff;color:#2F5233;border:0;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;flex:none');
+ var hb=botaoLingua('background:#fff;color:#2F5233;border:0;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;flex:none');
  hb.id='ii_lang';var hdr=document.querySelector('header');hdr.insertBefore(hb,hdr.querySelector('div'));
  if(LANG==='pt')return;
  document.getElementById('back').innerHTML='&#8592; '+L('Voltar');
@@ -310,7 +312,7 @@ porta.innerHTML='<div style="background:#fff;max-width:340px;width:88%;padding:2
  +'<a id="ii_cod_esq" href="#" style="display:block;margin-top:6px;font-size:13px;color:#1a7a3a">'+L('Esqueci o meu código')+'</a>'
  +'<a id="ii_cod_outro" href="#" style="display:none;margin-top:8px;font-size:12px;color:#1a7a3a">'+L('Não é esta pessoa? Entrar com outro código')+'</a></div>';
 document.body.appendChild(porta);
-(function(){var b=botaoLingua('float:right;background:#e2efe2;color:#1a7a3a;border:0;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:700;cursor:pointer');porta.firstChild.insertBefore(b,porta.firstChild.firstChild);})();
+(function(){var b=botaoLingua('float:right;background:#e2efe2;color:#1a7a3a;border:0;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer');porta.firstChild.insertBefore(b,porta.firstChild.firstChild);})();
 var TXT_ENTRAR=L('Escreva o seu código de acesso.')+'<br><span style="font-size:12px;color:#777">'+L('(O código é pessoal e é fornecido pelo gestor da plataforma. Ao entrar pela primeira vez, tem a opção de o alterar.)')+'</span>';
 var BLOQUEADO=false;
 function abrirPorta(msg,bloqueio){BLOQUEADO=!!bloqueio;porta.style.display='flex';document.getElementById('ii_cod_msg').style.color='#b00020';document.getElementById('ii_cod_msg').textContent=msg||'';
